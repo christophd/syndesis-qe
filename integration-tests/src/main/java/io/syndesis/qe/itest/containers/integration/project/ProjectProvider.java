@@ -3,9 +3,11 @@ package io.syndesis.qe.itest.containers.integration.project;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -25,16 +27,18 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 /**
  * @author Christoph Deppisch
  */
-public class ProjectProvider implements IntegrationProjectProvider, ApplicationPropertiesProvider {
+public class ProjectProvider implements IntegrationProjectProvider {
 
     private final String name;
+    private final String syndesisVersion;
 
     private Path tmpDir;
     private ProjectGeneratorConfiguration projectGeneratorConfiguration = new ProjectGeneratorConfiguration();
     private MavenProperties mavenProperties = new MavenProperties();
 
-    public ProjectProvider(String name) {
+    public ProjectProvider(String name, String syndesisVersion) {
         this.name = name;
+        this.syndesisVersion = syndesisVersion;
         withTempDirectory("target/integrations");
     }
 
@@ -58,20 +62,40 @@ public class ProjectProvider implements IntegrationProjectProvider, ApplicationP
                 }
             }
 
+            // overwrite the syndesis version in generated pom.xml as project export may use another version as required in test.
+            Path pomFile = projectDir.resolve("pom.xml");
+            if (Files.exists(pomFile)) {
+                List<String> pomLines = Files.readAllLines(pomFile, Charset.forName("utf-8"));
+                StringBuilder newPom = new StringBuilder();
+                for (String line : pomLines) {
+                    if (line.trim().startsWith("<syndesis.version>") && line.trim().endsWith("</syndesis.version>")) {
+                        newPom.append(line, 0, line.indexOf("<"))
+                                .append(String.format("<syndesis.version>%s</syndesis.version>", syndesisVersion))
+                                .append(line, line.lastIndexOf(">") + 1, line.length())
+                                .append(System.lineSeparator());
+                    } else {
+                        newPom.append(line).append(System.lineSeparator());
+                    }
+                }
+                Files.write(pomFile, newPom.toString().getBytes(Charset.forName("utf-8")));
+            }
+
+            // auto add secrets to application properties
+            Files.write(projectDir.resolve("src").resolve("main").resolve("resources").resolve("application.properties"),
+                    getApplicationProperties(integrationSupplier).getBytes(Charset.forName("utf-8")), StandardOpenOption.APPEND);
             return projectDir;
         } catch (IOException e) {
             throw new IllegalStateException("Failed to create integration project", e);
         }
     }
 
-    @Override
-    public String getApplicationProperties(IntegrationSupplier integrationSupplier) {
+    protected String getApplicationProperties(IntegrationSupplier integrationSupplier) {
         try {
             ProjectGenerator projectGenerator = new ProjectGenerator(projectGeneratorConfiguration, new ProjectProvider.StaticIntegrationResourceManager(integrationSupplier), mavenProperties);
             Properties applicationProperties = projectGenerator.generateApplicationProperties(integrationSupplier.get());
 
             StringWriter writer = new StringWriter();
-            applicationProperties.store(writer, "#Integration Test secrets");
+            applicationProperties.store(writer, "Auto added integration test secrets");
 
             return writer.toString();
         } catch (IOException e) {

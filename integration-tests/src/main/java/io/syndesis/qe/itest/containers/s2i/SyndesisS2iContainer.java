@@ -13,9 +13,9 @@ import org.testcontainers.images.builder.ImageFromDockerfile;
  */
 public class SyndesisS2iContainer extends GenericContainer<SyndesisS2iContainer> {
 
-    public SyndesisS2iContainer(String integrationName, Path projectDir, String syndesisVersion) {
+    public SyndesisS2iContainer(String integrationName, Path projectDir, String imageTag) {
         super(new ImageFromDockerfile(integrationName + "-s2i", true)
-                .withDockerfileFromBuilder(builder -> builder.from(String.format("syndesis/syndesis-s2i:%s", syndesisVersion))
+                .withDockerfileFromBuilder(builder -> builder.from(String.format("syndesis/syndesis-s2i:%s", imageTag))
                         .cmd("/usr/local/s2i/assemble")
                         .build()));
 

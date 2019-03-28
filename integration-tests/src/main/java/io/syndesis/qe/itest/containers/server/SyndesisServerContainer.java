@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.StringJoiner;
 
+import io.syndesis.qe.itest.SyndesisTestEnvironment;
 import org.springframework.util.StringUtils;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
@@ -14,8 +15,8 @@ import org.testcontainers.images.builder.ImageFromDockerfile;
  */
 public class SyndesisServerContainer extends GenericContainer<SyndesisServerContainer> {
 
-    private SyndesisServerContainer(String syndesisVersion, String javaOptions) {
-        super(String.format("syndesis/syndesis-server:%s", syndesisVersion));
+    private SyndesisServerContainer(String imageTag, String javaOptions) {
+        super(String.format("syndesis/syndesis-server:%s", imageTag));
 
         withEnv("JAVA_OPTIONS", javaOptions);
         withCreateContainerCmdModifier(createContainerCmd -> createContainerCmd.withName("syndesis-server"));
@@ -36,7 +37,7 @@ public class SyndesisServerContainer extends GenericContainer<SyndesisServerCont
     }
 
     public static class Builder {
-        private String syndesisVersion = "latest";
+        private String imageTag = SyndesisTestEnvironment.getSyndesisImageTag();
         private boolean deleteOnExit = true;
 
         private String serverJarPath;
@@ -55,12 +56,12 @@ public class SyndesisServerContainer extends GenericContainer<SyndesisServerCont
             if (StringUtils.hasText(serverJarPath)) {
                 return new SyndesisServerContainer(serverJarPath, getJavaOptionString(), deleteOnExit);
             } else {
-                return new SyndesisServerContainer(syndesisVersion, getJavaOptionString());
+                return new SyndesisServerContainer(imageTag, getJavaOptionString());
             }
         }
 
-        public SyndesisServerContainer.Builder withSyndesisVersion(String version) {
-            this.syndesisVersion = version;
+        public SyndesisServerContainer.Builder withImageTag(String tag) {
+            this.imageTag = tag;
             return this;
         }
 
