@@ -8,12 +8,12 @@ import io.syndesis.qe.itest.integration.supplier.IntegrationSupplier;
  * @author Christoph Deppisch
  */
 @FunctionalInterface
-public interface ProjectJarGenerator {
+public interface IntegrationProjectProvider {
 
     /**
-     * Builds the integration project as JAR and provides the path to that file.
+     * Builds the integration project sources and provides the path to that project dir.
      * @param integrationSupplier
      * @return
      */
-    Path buildProjectJar(IntegrationSupplier integrationSupplier);
+    Path buildProject(IntegrationSupplier integrationSupplier);
 }

@@ -9,8 +9,8 @@ import io.syndesis.common.model.integration.Flow;
 import io.syndesis.common.model.integration.Integration;
 import io.syndesis.qe.itest.integration.customizer.IntegrationCustomizer;
 import io.syndesis.qe.itest.containers.integration.project.ApplicationPropertiesProvider;
-import io.syndesis.qe.itest.containers.integration.project.ProjectJarGenerator;
-import io.syndesis.qe.itest.containers.integration.project.S2IProjectGenerator;
+import io.syndesis.qe.itest.containers.integration.project.IntegrationProjectProvider;
+import io.syndesis.qe.itest.containers.integration.project.S2IProjectProvider;
 import io.syndesis.qe.itest.integration.supplier.CustomizerAwareIntegrationSupplier;
 import io.syndesis.qe.itest.integration.supplier.ExportIntegrationSupplier;
 import io.syndesis.qe.itest.integration.supplier.IntegrationSupplier;
@@ -23,9 +23,9 @@ import org.testcontainers.images.builder.ImageFromDockerfile;
  */
 public class SyndesisIntegrationRuntimeContainer extends GenericContainer<SyndesisIntegrationRuntimeContainer> {
 
-    private SyndesisIntegrationRuntimeContainer(String integrationName, Path projectJar, String applicationProperties, String s2iVersion, boolean deleteOnExit) {
+    private SyndesisIntegrationRuntimeContainer(String syndesisVersion, String integrationName, Path projectJar, String applicationProperties, boolean deleteOnExit) {
         super(new ImageFromDockerfile(integrationName, deleteOnExit)
-                .withDockerfileFromBuilder(builder -> builder.from(String.format("syndesis/syndesis-s2i:%s", s2iVersion))
+                .withDockerfileFromBuilder(builder -> builder.from(String.format("syndesis/syndesis-s2i:%s", syndesisVersion))
                         .add("integration-runtime.jar", "/deployments/integration-runtime.jar")
                         .add("application.properties", "/deployments/config/application.properties")
                         .build())
@@ -37,31 +37,31 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
 
     public static class Builder {
         private String name = "i-test-integration";
-        private String s2iVersion = "latest";
+        private String syndesisVersion = "latest";
 
         private boolean deleteOnExit = true;
 
         private ApplicationPropertiesProvider propertiesProvider;
-        private ProjectJarGenerator projectJarGenerator;
+        private IntegrationProjectProvider projectProvider;
         private IntegrationSupplier integrationSupplier;
 
         private List<IntegrationCustomizer> customizers = new ArrayList<>();
 
         public SyndesisIntegrationRuntimeContainer build() {
-            if (projectJarGenerator == null) {
-                projectJarGenerator = new S2IProjectGenerator(name, s2iVersion);
+            if (projectProvider == null) {
+                projectProvider = new S2IProjectProvider(name, syndesisVersion);
             }
 
             CustomizerAwareIntegrationSupplier supplier = new CustomizerAwareIntegrationSupplier(integrationSupplier, customizers);
-            Path projectJarPath = projectJarGenerator.buildProjectJar(supplier);
+            Path projectJarPath = projectProvider.buildProject(supplier);
 
             if (propertiesProvider == null) {
-                propertiesProvider = new S2IProjectGenerator(name, s2iVersion);
+                propertiesProvider = new S2IProjectProvider(name, syndesisVersion);
             }
 
             String applicationProperties = propertiesProvider.getApplicationProperties(supplier);
 
-            return new SyndesisIntegrationRuntimeContainer(name, projectJarPath, applicationProperties, s2iVersion, deleteOnExit);
+            return new SyndesisIntegrationRuntimeContainer(syndesisVersion, name, projectJarPath, applicationProperties, deleteOnExit);
         }
 
         public Builder withName(String name) {
@@ -69,8 +69,8 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
             return this;
         }
 
-        public Builder withS2iVersion(String version) {
-            this.s2iVersion = version;
+        public Builder withSyndesisVersion(String version) {
+            this.syndesisVersion = version;
             return this;
         }
 
@@ -79,8 +79,8 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
             return this;
         }
 
-        public Builder withJarGenerator(ProjectJarGenerator generator) {
-            this.projectJarGenerator = generator;
+        public Builder withProjectProvider(IntegrationProjectProvider provider) {
+            this.projectProvider = provider;
             return this;
         }
 
@@ -121,7 +121,7 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
 
         public Builder fromFatJar(Path pathToJar) {
             this.integrationSupplier = () -> null;
-            this.projectJarGenerator = (integration) -> pathToJar;
+            this.projectProvider = (integration) -> pathToJar;
             return this;
         }
 

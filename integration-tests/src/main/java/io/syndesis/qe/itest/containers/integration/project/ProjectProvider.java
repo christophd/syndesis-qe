@@ -18,7 +18,6 @@ import io.syndesis.common.util.MavenProperties;
 import io.syndesis.integration.api.IntegrationResourceManager;
 import io.syndesis.integration.project.generator.ProjectGenerator;
 import io.syndesis.integration.project.generator.ProjectGeneratorConfiguration;
-import io.syndesis.qe.itest.containers.s2i.SyndesisS2iContainer;
 import io.syndesis.qe.itest.integration.supplier.IntegrationSupplier;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -26,49 +25,24 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 /**
  * @author Christoph Deppisch
  */
-public class S2IProjectGenerator implements ProjectJarGenerator, ApplicationPropertiesProvider {
+public class ProjectProvider implements IntegrationProjectProvider, ApplicationPropertiesProvider {
 
     private final String name;
-    private final String s2iVersion;
 
     private Path tmpDir;
-
     private ProjectGeneratorConfiguration projectGeneratorConfiguration = new ProjectGeneratorConfiguration();
     private MavenProperties mavenProperties = new MavenProperties();
 
-    public S2IProjectGenerator(String name, String s2iVersion) {
+    public ProjectProvider(String name) {
         this.name = name;
-        this.s2iVersion = s2iVersion;
-
         withTempDirectory("target/integrations");
     }
 
     @Override
-    public String getApplicationProperties(IntegrationSupplier integrationSupplier) {
+    public Path buildProject(IntegrationSupplier integrationSupplier) {
         try {
-            ProjectGenerator projectGenerator = new ProjectGenerator(projectGeneratorConfiguration, new StaticIntegrationResourceManager(integrationSupplier), mavenProperties);
-            Properties applicationProperties = projectGenerator.generateApplicationProperties(integrationSupplier.get());
-
-            StringWriter writer = new StringWriter();
-            applicationProperties.store(writer, "#Integration Test secrets");
-
-            return writer.toString();
-        } catch (IOException e) {
-                throw new IllegalStateException("Failed to create application properties", e);
-        }
-    }
-
-    @Override
-    public Path buildProjectJar(IntegrationSupplier integrationSupplier) {
-        Path projectDir;
-        try {
-            if (tmpDir != null) {
-                projectDir = Files.createTempDirectory(tmpDir, name);
-            } else {
-                projectDir = Files.createTempDirectory(name);
-            }
-
-            ProjectGenerator projectGenerator = new ProjectGenerator(projectGeneratorConfiguration, new StaticIntegrationResourceManager(integrationSupplier), mavenProperties);
+            Path projectDir = Files.createTempDirectory(tmpDir, name);
+            ProjectGenerator projectGenerator = new ProjectGenerator(projectGeneratorConfiguration, new ProjectProvider.StaticIntegrationResourceManager(integrationSupplier), mavenProperties);
             try (TarArchiveInputStream in = new TarArchiveInputStream(projectGenerator.generate(integrationSupplier.get(), System.out::println))) {
                 ArchiveEntry archiveEntry;
                 while ((archiveEntry = in.getNextEntry()) != null) {
@@ -84,16 +58,28 @@ public class S2IProjectGenerator implements ProjectJarGenerator, ApplicationProp
                 }
             }
 
-            SyndesisS2iContainer syndesisS2iContainer = new SyndesisS2iContainer(name, projectDir, s2iVersion);
-            syndesisS2iContainer.start();
-
-            return projectDir.resolve("target").resolve("project-0.1-SNAPSHOT.jar");
+            return projectDir;
         } catch (IOException e) {
             throw new IllegalStateException("Failed to create integration project", e);
         }
     }
 
-    public S2IProjectGenerator withTempDirectory(String tmpDir) {
+    @Override
+    public String getApplicationProperties(IntegrationSupplier integrationSupplier) {
+        try {
+            ProjectGenerator projectGenerator = new ProjectGenerator(projectGeneratorConfiguration, new ProjectProvider.StaticIntegrationResourceManager(integrationSupplier), mavenProperties);
+            Properties applicationProperties = projectGenerator.generateApplicationProperties(integrationSupplier.get());
+
+            StringWriter writer = new StringWriter();
+            applicationProperties.store(writer, "#Integration Test secrets");
+
+            return writer.toString();
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to create application properties", e);
+        }
+    }
+
+    public ProjectProvider withTempDirectory(String tmpDir) {
         try {
             this.tmpDir = Files.createDirectories(Paths.get(tmpDir));
         } catch (IOException e) {
@@ -103,7 +89,6 @@ public class S2IProjectGenerator implements ProjectJarGenerator, ApplicationProp
     }
 
     private static class StaticIntegrationResourceManager implements IntegrationResourceManager {
-
         private final IntegrationSupplier integrationSupplier;
 
         private StaticIntegrationResourceManager(IntegrationSupplier integrationSupplier) {
@@ -139,5 +124,9 @@ public class S2IProjectGenerator implements ProjectJarGenerator, ApplicationProp
         public String decrypt(String encrypted) {
             return "secret";
         }
+    }
+
+    public String getName() {
+        return name;
     }
 }
