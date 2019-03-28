@@ -19,7 +19,7 @@
 		<surefire.version>2.22.0</surefire.version>
 		<checkstyle.version>3.0.0</checkstyle.version>
 
-		<apache.http.commons.version>4.5.3</apache.http.commons.version>
+		<apache.http.commons.version>4.5.5</apache.http.commons.version>
 		<lombok.version>1.18.6</lombok.version>
 		<hibernate.version>6.0.16.Final</hibernate.version>
 		<junit.version>4.12</junit.version>
@@ -56,6 +56,9 @@
 		<google.apis.sheets.version>v4-rev553-1.25.0</google.apis.sheets.version>
 		<github.core.version>2.1.5</github.core.version>
 		<irclib.version>1.10</irclib.version>
+		<citrus.version>2.7.9</citrus.version>
+		<testcontainers.version>1.10.7</testcontainers.version>
+		<hibernate.validator.version>5.3.5.Final</hibernate.validator.version>
 		<el.version>3.0.0</el.version>
 		<box.version>2.30.1</box.version>
 		<jsoup.version>1.11.3</jsoup.version>
@@ -426,6 +429,7 @@
 			</activation>
 			<modules>
 				<module>rest-tests</module>
+				<module>integration-tests</module>
 				<module>ui-tests</module>
 				<module>utilities</module>
 			</modules>
@@ -439,6 +443,17 @@
 			</activation>
 			<modules>
 				<module>rest-tests</module>
+			</modules>
+		</profile>
+		<profile>
+			<id>integration</id>
+			<activation>
+				<property>
+					<name>integration</name>
+				</property>
+			</activation>
+			<modules>
+				<module>integration-tests</module>
 			</modules>
 		</profile>
 		<profile>

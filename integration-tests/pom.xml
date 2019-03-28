@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.syndesis.qe</groupId>
+    <artifactId>syndesis-qe-parent</artifactId>
+    <version>0.1-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>integration-tests</artifactId>
+  <name>syndesis integration tests</name>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.syndesis.common</groupId>
+        <artifactId>common-model</artifactId>
+        <version>${syndesis.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.syndesis.server</groupId>
+        <artifactId>server-runtime</artifactId>
+        <version>${syndesis.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.syndesis.integration</groupId>
+        <artifactId>integration-api</artifactId>
+        <version>${syndesis.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.syndesis.integration</groupId>
+        <artifactId>integration-project-generator</artifactId>
+        <version>${syndesis.version}</version>
+      </dependency>
+
+      <!-- Citrus -->
+      <dependency>
+        <groupId>com.consol.citrus</groupId>
+        <artifactId>citrus-core</artifactId>
+        <version>${citrus.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.consol.citrus</groupId>
+        <artifactId>citrus-java-dsl</artifactId>
+        <version>${citrus.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.consol.citrus</groupId>
+        <artifactId>citrus-http</artifactId>
+        <version>${citrus.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hibernate</groupId>
+        <artifactId>hibernate-validator</artifactId>
+        <version>${hibernate.validator.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.glassfish</groupId>
+        <artifactId>javax.el</artifactId>
+        <version>3.0.0</version>
+      </dependency>
+
+      <!-- Test containers -->
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers</artifactId>
+        <version>${testcontainers.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>postgresql</artifactId>
+        <version>${testcontainers.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.syndesis.common</groupId>
+      <artifactId>common-model</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.syndesis.integration</groupId>
+      <artifactId>integration-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.syndesis.integration</groupId>
+      <artifactId>integration-project-generator</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.consol.citrus</groupId>
+      <artifactId>citrus-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.consol.citrus</groupId>
+      <artifactId>citrus-java-dsl</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.consol.citrus</groupId>
+      <artifactId>citrus-http</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>postgresql</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+    </dependency>
+
+    <!-- Logging -->
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+    </dependency>
+
+    <!-- Test scope -->
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-validator</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish</groupId>
+      <artifactId>javax.el</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <skip>false</skip>
+          <artifactItems>
+            <artifactItem>
+              <groupId>io.syndesis.server</groupId>
+              <artifactId>server-runtime</artifactId>
+              <version>${syndesis.version}</version>
+              <type>jar</type>
+              <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
+              <destFileName>server-runtime.jar</destFileName>
+            </artifactItem>
+          </artifactItems>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>${surefire.version}</version>
+        <executions>
+          <execution>
+            <id>integration-tests</id>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
