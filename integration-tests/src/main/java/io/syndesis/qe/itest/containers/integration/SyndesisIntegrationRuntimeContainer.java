@@ -14,6 +14,7 @@ import io.syndesis.qe.itest.containers.integration.project.IntegrationProjectPro
 import io.syndesis.qe.itest.containers.integration.project.ProjectProvider;
 import io.syndesis.qe.itest.containers.integration.project.S2iProjectProvider;
 import io.syndesis.qe.itest.integration.customizer.IntegrationCustomizer;
+import io.syndesis.qe.itest.integration.customizer.JsonPathIntegrationCustomizer;
 import io.syndesis.qe.itest.integration.supplier.CustomizerAwareIntegrationSupplier;
 import io.syndesis.qe.itest.integration.supplier.ExportIntegrationSupplier;
 import io.syndesis.qe.itest.integration.supplier.IntegrationSupplier;
@@ -162,6 +163,12 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
             this.integrationSupplier = new ExportIntegrationSupplier(export);
             return this;
         }
+
+        public Builder customize(String expression, Object value) {
+            this.customizers.add(new JsonPathIntegrationCustomizer(expression, value));
+            return this;
+        }
+
 
         public Builder withIntegrationCustomizer(IntegrationCustomizer customizer) {
             this.customizers.add(customizer);

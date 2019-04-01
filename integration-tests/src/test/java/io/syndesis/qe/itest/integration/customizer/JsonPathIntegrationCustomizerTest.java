@@ -65,7 +65,7 @@ public class JsonPathIntegrationCustomizerTest {
                 .build();
 
         Assert.assertEquals(toCustomize, new JsonPathIntegrationCustomizer(Collections.emptyMap()).apply(toCustomize));
-        Assert.assertEquals("customized", new JsonPathIntegrationCustomizer(Collections.singletonMap("$..connection-property", "customized")).apply(toCustomize).getConnections().get(0).getConfiguredProperties().get("connection-property"));
-        Assert.assertEquals("customized", new JsonPathIntegrationCustomizer(Collections.singletonMap("$..customText", "customized")).apply(toCustomize).getFlows().get(0).getSteps().get(1).getConfiguredProperties().get("customText"));
+        Assert.assertEquals("customized", new JsonPathIntegrationCustomizer("$..connection-property", "customized").apply(toCustomize).getConnections().get(0).getConfiguredProperties().get("connection-property"));
+        Assert.assertEquals("customized", new JsonPathIntegrationCustomizer("$..customText", "customized").apply(toCustomize).getFlows().get(0).getSteps().get(1).getConfiguredProperties().get("customText"));
     }
 }

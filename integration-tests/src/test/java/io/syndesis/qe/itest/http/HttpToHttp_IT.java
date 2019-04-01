@@ -1,7 +1,5 @@
 package io.syndesis.qe.itest.http;
 
-import java.util.Collections;
-
 import com.consol.citrus.annotations.CitrusResource;
 import com.consol.citrus.annotations.CitrusTest;
 import com.consol.citrus.dsl.endpoint.CitrusEndpoints;
@@ -9,7 +7,6 @@ import com.consol.citrus.dsl.runner.TestRunner;
 import com.consol.citrus.http.server.HttpServer;
 import io.syndesis.qe.itest.SyndesisIntegrationTestSupport;
 import io.syndesis.qe.itest.containers.integration.SyndesisIntegrationRuntimeContainer;
-import io.syndesis.qe.itest.integration.customizer.JsonPathIntegrationCustomizer;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,8 +42,8 @@ public class HttpToHttp_IT extends SyndesisIntegrationTestSupport {
     public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
             .withName("http-to-http")
             .fromExport(HttpToHttp_IT.class.getResourceAsStream("HttpToHttp-export.zip"))
-            .withIntegrationCustomizer(new JsonPathIntegrationCustomizer(Collections.singletonMap("$..configuredProperties.baseUrl",
-                    String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, todoServerPort))))
+            .customize("$..configuredProperties.baseUrl",
+                        String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, todoServerPort))
             .build();
 
     @Test

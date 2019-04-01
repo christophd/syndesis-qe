@@ -3,7 +3,6 @@ package io.syndesis.qe.itest.sql;
 import javax.servlet.Filter;
 import javax.sql.DataSource;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -16,7 +15,6 @@ import com.consol.citrus.http.server.HttpServer;
 import com.consol.citrus.http.servlet.RequestCachingServletFilter;
 import io.syndesis.qe.itest.SyndesisIntegrationTestSupport;
 import io.syndesis.qe.itest.containers.integration.SyndesisIntegrationRuntimeContainer;
-import io.syndesis.qe.itest.integration.customizer.JsonPathIntegrationCustomizer;
 import io.syndesis.qe.itest.gzip.GzipServletFilter;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -55,8 +53,8 @@ public class MultiSqlToSheets_IT extends SyndesisIntegrationTestSupport {
     public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
             .withName("sql-to-sheets")
             .fromExport(MultiSqlToSheets_IT.class.getResourceAsStream("MultiSqlToSheets-export.zip"))
-            .withIntegrationCustomizer(new JsonPathIntegrationCustomizer(Collections.singletonMap("$..rootUrl.defaultValue",
-                    String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, googleSheetsServerPort))))
+            .customize("$..rootUrl.defaultValue",
+                        String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, googleSheetsServerPort))
             .build()
             .withNetwork(getSyndesisDb().getNetwork());
 

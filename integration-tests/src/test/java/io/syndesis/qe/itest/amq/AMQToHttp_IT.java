@@ -1,7 +1,6 @@
 package io.syndesis.qe.itest.amq;
 
 import javax.jms.ConnectionFactory;
-import java.util.Collections;
 
 import com.consol.citrus.annotations.CitrusResource;
 import com.consol.citrus.annotations.CitrusTest;
@@ -12,7 +11,6 @@ import com.consol.citrus.jms.endpoint.JmsEndpoint;
 import io.syndesis.qe.itest.SyndesisIntegrationTestSupport;
 import io.syndesis.qe.itest.containers.amq.JBossAMQBrokerContainer;
 import io.syndesis.qe.itest.containers.integration.SyndesisIntegrationRuntimeContainer;
-import io.syndesis.qe.itest.integration.customizer.JsonPathIntegrationCustomizer;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -53,8 +51,8 @@ public class AMQToHttp_IT extends SyndesisIntegrationTestSupport {
     public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
             .withName("amq-to-http")
             .fromExport(AMQToHttp_IT.class.getResourceAsStream("AMQToHttp-export.zip"))
-            .withIntegrationCustomizer(new JsonPathIntegrationCustomizer(Collections.singletonMap("$..configuredProperties.baseUrl",
-                    String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, todoServerPort))))
+            .customize("$..configuredProperties.baseUrl",
+                        String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, todoServerPort))
             .build()
             .withNetwork(amqBrokerContainer.getNetwork());
 

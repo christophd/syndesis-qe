@@ -1,6 +1,7 @@
 package io.syndesis.qe.itest.integration.customizer;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 
 import com.jayway.jsonpath.Configuration;
@@ -17,6 +18,10 @@ import io.syndesis.common.util.Json;
 public class JsonPathIntegrationCustomizer implements IntegrationCustomizer {
 
     private final Map<String, Object> expressions;
+
+    public JsonPathIntegrationCustomizer(String expression, Object value) {
+        this(Collections.singletonMap(expression, value));
+    }
 
     public JsonPathIntegrationCustomizer(Map<String, Object> expressions) {
         this.expressions = expressions;
