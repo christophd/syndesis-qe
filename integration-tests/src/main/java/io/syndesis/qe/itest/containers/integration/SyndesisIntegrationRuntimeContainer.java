@@ -164,6 +164,12 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
             return this;
         }
 
+        public Builder fromProjectDir(Path pathToProject) {
+            this.integrationSupplier = () -> null;
+            this.projectProvider = (integration) -> pathToProject;
+            return this;
+        }
+
         public Builder fromExport(Path pathToExport) {
             this.integrationSupplier = new ExportIntegrationSupplier(pathToExport);
             return this;

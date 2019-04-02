@@ -5,6 +5,26 @@ This repository contains integration tests for Syndesis. The tests start integra
 the running integration. The integration outcome gets consumed and validated by simulated 3rd party services and/or within 
 the database.
 
+##### Table of Contents
+
+* [Setup and preparations](#setup-and-preparations)
+* [Test environment](#test-environment)
+* [Running tests](#running-tests)
+* [Syndesis integration runtime](#syndesis-integration-runtime)
+  * [From integration export](#from-integration-export)
+  * [From integration model](#from-integration-model)
+  * [From integration fat jar](#from-integration-fat-jar)
+  * [From integration project](#from-integration-project)
+  * [From integration json](#from-integration-json)
+* [Syndesis db container](#syndesis-db-container)
+* [Syndesis server container](#syndesis-server)
+* [Infrastructure containers](#infrastructure-containers)
+  * [AMQ Message Broker](#amq-message-broker)
+  * [Kafka Message Broker](#kafka-message-broker)
+* [Simulate 3rd party interfaces](#simulate-3rd-party-interfaces)
+* [Customize integrations](#customize-integrations)
+* [Logging](#logging)
+
 ## Setup and preparations
 
 The integration tests in this repository use [JUnit](https://junit.org/), [Testcontainers](https://www.testcontainers.org/) 
@@ -30,26 +50,7 @@ the integration start connection and consumes the integration output for verific
 Each test defines the required components individually so Testcontainers are automatically started and stopped before and after the tests. All tests share
 a common Postgres database container that holds the Syndesis data as well as sample database tables to test data.
 
-## Running tests
-
-You can run the tests from your favorite Java IDE (e.g. Eclipse, IntelliJ) as normal JUnit test. Also you can run all available tests with
-Maven build tool:
-
-```bash
-mvn clean install
-```
-
-## Running a single test
-
-```bash
-mvn clean install -Dit.test=MyTestClassName
-```
-
-```bash
-mvn clean install -Dit.test=MyTestClassName#mytestMethodName
-```
-
-## System properties / environment variables
+### System properties / environment variables
 
 You can influence the test environment by setting several properties or environment variables for the test runtime. You can set these 
 as system properties in Maven and/or in your Java IDE or as environment variables on your host.
@@ -65,41 +66,27 @@ The following system properties (or environment variables) are known to the proj
     form Maven artifact name is not working for you.
 * **syndesis.s2i.build.enabled** / **SYNDESIS_S2I_BUILD_ENABLED**
     * By default the test containers use a Spring Boot build an runtime environment in the Syndesis integration runtime container. You can also use
-    the S2i image to build and run the integration. The S2i image build is close to production but slower in execution.          
+    the S2i image to build and run the integration. The S2i image build is close to production but slower in execution.
 
-## Connections and credentials
+## Running tests
 
-### URLs and destinations
+You can run the tests from your favorite Java IDE (e.g. Eclipse, IntelliJ) as normal JUnit test. Also you can run all available tests with
+Maven build tool:
 
-The exported integration may connect to 3rd party services. The services to connect to are defined with base URLs in the export. We have to overwrite
-these URLs for the integration test because we want the integration to connect to a simulated 3rd party service instead of the production endpoint.
-
-You can overwrite any configured property in the integration export using JsonPath expressions:
-
-```java
-@ClassRule
-public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-        .withName("http-to-google-sheets")
-        .fromExport(HttpToHttp_IT.class.getResourceAsStream("HttpToGoogleSheets-export.zip"))
-        .customize("$..configuredProperties.baseUrl",
-                String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, todoServerPort))
-        .customize("$..rootUrl.defaultValue",
-                String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, googleSheetsServerPort))        
-        .build();
+```bash
+mvn verify
 ```
 
-While building the integration runtime container we can add JsonPath expressions that customize the exported integration. This enables us to set any configured
-property in the integration export. In the sample above we overwrite the Http service base URL that is periodically called as start connection. In addition to that
-we overwrite the Google Sheets root URL and point to the local simulated 3rd party services.
+This will execute all available integration tests. You can also run single tests or test methods. Just give the test class name and/or test method name as
+an argument.
 
-The Google Sheets connection also uses encrypted user credentials and secrets in the integration export. These credentials get automatically overwritten before the test.
+```bash
+mvn verify -Dit.test=MyTestClassName
+```
 
-### Encrypted secrets
-
-The integration exports may use encrypted credentials representing passwords and secrets for connections to 3rd party services. The integration test 
-automatically overwrites the encrypted values with a static secret ("secret"). This way simulated databases, infrastructure components (such as message brokers)
-and 3rd party services can use the default "secret" credential in order to word with the integration export.
-
+```bash
+mvn verify -Dit.test=MyTestClassName#mytestMethodName
+```
 
 ## Syndesis integration runtime
 
@@ -116,8 +103,7 @@ First of all you can use a JUnit class rule and add the container to your test.
 public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
                 .withName("timer-to-log-export")
                 .fromExport(TimerToLog_IT.class.getResourceAsStream("TimerToLog-export.zip"))
-                .build()
-                .waitingFor(Wait.forLogMessage(".*\"message\":\"Hello Syndesis!\".*\\s", 2));
+                .build();
 ```
 
 This creates a new Syndesis runtime container and starts the integration from an export file `TimerToLog-export.zip`. This integration runtime container is shared for all test methods 
@@ -132,8 +118,7 @@ public void timeToLogExportTest() {
             .withName("timer-to-log-export")
             .fromExport(TimerToLog_IT.class.getResourceAsStream("TimerToLog-export.zip"));
 
-    try (SyndesisIntegrationRuntimeContainer integrationContainer = integrationContainerBuilder.build()
-            .waitingFor(Wait.forLogMessage(".*\"message\":\"Hello Syndesis!\".*\\s", 2))) {
+    try (SyndesisIntegrationRuntimeContainer integrationContainer = integrationContainerBuilder.build()) {
         integrationContainer.start();
     
         //do something with the integration runtime container
@@ -143,7 +128,7 @@ public void timeToLogExportTest() {
 
 The `try-with-resources` block ensures that the container is stopped once the test is finished.
 
-### Create from export
+### From integration export
 
 You can run exported integrations in the runtime container. This is the most convenient way to start the integration as every information required to run the integration is bundled in the
 export file. You can customize the integration properties though using integration customizers.
@@ -153,11 +138,10 @@ export file. You can customize the integration properties though using integrati
 public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
                 .withName("timer-to-log-export")
                 .fromExport(TimerToLog_IT.class.getResourceAsStream("TimerToLog-export.zip"))
-                .build()
-                .waitingFor(Wait.forLogMessage(".*\"message\":\"Hello Syndesis!\".*\\s", 2));
+                .build();
 ```
  
-### Create from integration model
+### From integration model
 
 You can create the integration model and run that integration in the runtime container. The integration model can be seen easily within the test and you can
 create variations of that integration very easy.
@@ -198,11 +182,35 @@ public static SyndesisIntegrationRuntimeContainer integrationContainer = new Syn
                     .putConfiguredProperty("customText", "Hello Syndesis!")
                     .build()))
             .build())
-        .build()
-        .waitingFor(Wait.forLogMessage(".*\"message\":\"Hello Syndesis!\".*\\s", 2));
+        .build();
 ``` 
 
-### Create from integration json 
+### From integration fat jar 
+
+If you have a integration project fat jar you can build the integration runtime container directly with that jar file.
+
+```java
+@ClassRule
+public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
+                .withName("timer-to-log-jar")
+                .fromFatJar(Paths.get("/path/to/project.jar"))
+                .build();
+```
+
+### From integration project 
+
+You can build a runtime container from a Syndesis integration project folder. The project should contain all resources required to run the integration.
+The integration runtime container will use a volume mount to that directory.
+
+```java
+@ClassRule
+public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
+                .withName("timer-to-log-dir")
+                .fromProjectDir(Paths.get("/path/to/project-dir"))
+                .build();
+```
+
+### From integration json 
 
 Last not least you can provide a Json model file representing the integration to build an run in the container.
 
@@ -211,8 +219,7 @@ Last not least you can provide a Json model file representing the integration to
 public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
                 .withName("timer-to-log-json")
                 .fromSupplier(new JsonIntegrationSupplier(TimerToLog_IT.class.getResource("TimerToLog.json")))
-                .build()
-                .waitingFor(Wait.forLogMessage(".*\"message\":\"Hello Syndesis!\".*\\s", 2));
+                .build();
 ```
 
 ## Syndesis db container
@@ -418,6 +425,59 @@ public void testHttpToHttp(@CitrusResource TestRunner runner) {
 The test expects an incoming `GET` request on `/todos` on the simulated Citrus service. Citrus the is supposed to respond with a sample list of todo tasks.
 
 This way wen can control the test data returned by 3rd party services and we implicitly validate that the integration connects to the 3rd party services.
+
+## Customize integrations
+
+### URLs and destinations
+
+The exported integration may connect to 3rd party services. The services to connect to are defined with base URLs in the export. We have to overwrite
+these URLs for the integration test because we want the integration to connect to a simulated 3rd party service instead of the production endpoint.
+
+You can overwrite any configured property in the integration export using JsonPath expressions:
+
+```java
+@ClassRule
+public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
+        .withName("http-to-google-sheets")
+        .fromExport(HttpToHttp_IT.class.getResourceAsStream("HttpToGoogleSheets-export.zip"))
+        .customize("$..configuredProperties.baseUrl",
+                String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, todoServerPort))
+        .customize("$..rootUrl.defaultValue",
+                String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, googleSheetsServerPort))        
+        .build();
+```
+
+While building the integration runtime container we can add JsonPath expressions that customize the exported integration. This enables us to set any configured
+property in the integration export. In the sample above we overwrite the Http service base URL that is periodically called as start connection. In addition to that
+we overwrite the Google Sheets root URL and point to the local simulated 3rd party services.
+
+The Google Sheets connection also uses encrypted user credentials and secrets in the integration export. These credentials get automatically overwritten before the test.
+
+### Encrypted secrets
+
+The integration exports may use encrypted credentials representing passwords and secrets for connections to 3rd party services. The integration test 
+automatically overwrites the encrypted values with a static secret ("secret"). This way simulated databases, infrastructure components (such as message brokers)
+and 3rd party services can use the default "secret" credential in order to word with the integration export.
+
+## Scheduler expressions
+
+Sometimes integrations get periodically invoked with timer or scheduler. The exported integrations may use minutes or hours delay settings which is not
+applicable to automated tests. You can overwrite the timer period with integration customizers:
+
+```java
+@ClassRule
+public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
+        .withName("http-to-amq")
+        .fromExport(HttpToAMQ_IT.class.getResourceAsStream("HttpToAMQ-export.zip"))
+        .customize("$..configuredProperties.schedulerExpression", "1000")
+        .customize("$..configuredProperties.baseUrl",
+                    String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, todoServerPort))
+        .build()
+        .withNetwork(amqBrokerContainer.getNetwork());
+```
+
+The expression `customize("$..configuredProperties.schedulerExpression", "1000")` overwrites the scheduler to fire every 1000 milliseconds. This will be more
+sufficient to the automated integration tests in terms of avoiding long running tests.
 
 ## Logging
 
