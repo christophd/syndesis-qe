@@ -1,13 +1,16 @@
 package io.syndesis.qe.itest.containers.server;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.StringJoiner;
 
 import io.syndesis.qe.itest.SyndesisTestEnvironment;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 
 /**
@@ -17,28 +20,23 @@ public class SyndesisServerContainer extends GenericContainer<SyndesisServerCont
 
     private SyndesisServerContainer(String imageTag, String javaOptions) {
         super(String.format("syndesis/syndesis-server:%s", imageTag));
-
         withEnv("JAVA_OPTIONS", javaOptions);
-        withCreateContainerCmdModifier(createContainerCmd -> createContainerCmd.withName("syndesis-server"));
-        withExposedPorts(8080);
     }
 
     private SyndesisServerContainer(String serverJarPath, String javaOptions, boolean deleteOnExit) {
         super(new ImageFromDockerfile("syndesis-server", deleteOnExit)
                 .withDockerfileFromBuilder(builder -> builder.from("fabric8/s2i-java:3.0-java8")
-                                                             .env("JAVA_APP_JAR", "server.jar")
-                                                             .env("JAVA_OPTIONS", javaOptions)
-                                                             .build()));
-
-        withCreateContainerCmdModifier(createContainerCmd -> createContainerCmd.withName("syndesis-server"));
+                             .env("JAVA_OPTIONS", javaOptions)
+                             .expose(8080, 8778)
+                             .build()));
 
         withClasspathResourceMapping(serverJarPath,"/deployments/server.jar", BindMode.READ_ONLY);
-        withExposedPorts(8080);
     }
 
     public static class Builder {
         private String imageTag = SyndesisTestEnvironment.getSyndesisImageTag();
         private boolean deleteOnExit = true;
+        private boolean enableLogging = false;
 
         private String serverJarPath;
 
@@ -50,14 +48,30 @@ public class SyndesisServerContainer extends GenericContainer<SyndesisServerCont
             javaOptions.put("openshift.enabled", "false");
             javaOptions.put("metrics.kind", "noop");
             javaOptions.put("features.monitoring.enabled", "false");
+            javaOptions.put("spring.datasource.url", "jdbc:postgresql://syndesis-db:5432/syndesis?sslmode=disable");
+            javaOptions.put("spring.datasource.username", "syndesis");
+            javaOptions.put("spring.datasource.password", "secret");
+            javaOptions.put("spring.datasource.driver-class-name", "org.postgresql.Driver");
+            javaOptions.put("dao.kind", "jsondb");
         }
 
         public SyndesisServerContainer build() {
+            SyndesisServerContainer container;
             if (StringUtils.hasText(serverJarPath)) {
-                return new SyndesisServerContainer(serverJarPath, getJavaOptionString(), deleteOnExit);
+                container = new SyndesisServerContainer(serverJarPath, getJavaOptionString(), deleteOnExit);
             } else {
-                return new SyndesisServerContainer(imageTag, getJavaOptionString());
+                container = new SyndesisServerContainer(imageTag, getJavaOptionString());
             }
+
+            if (enableLogging) {
+                container.withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("SERVER_CONTAINER")));
+            }
+
+            container.withCreateContainerCmdModifier(createContainerCmd -> createContainerCmd.withName("syndesis-server"));
+            container.withStartupTimeout(Duration.ofSeconds(180));
+            container.withExposedPorts(8080, 8778);
+
+            return container;
         }
 
         public SyndesisServerContainer.Builder withImageTag(String tag) {
@@ -80,14 +94,16 @@ public class SyndesisServerContainer extends GenericContainer<SyndesisServerCont
             return this;
         }
 
+        public SyndesisServerContainer.Builder enableLogging() {
+            this.enableLogging = true;
+            return this;
+        }
+
         private String getJavaOptionString() {
-            String javaOptionString = "";
-            if (javaOptions.isEmpty()) {
-                StringJoiner stringJoiner = new StringJoiner("-D ");
-                javaOptions.entrySet().stream().map(entry -> entry.getKey() + "=" + entry.getValue()).forEach(stringJoiner::add);
-                javaOptionString = "-D" + stringJoiner.toString();
-            }
-            return javaOptionString;
+            StringJoiner stringJoiner = new StringJoiner(" -D", "-D", "");
+            stringJoiner.setEmptyValue("");
+            javaOptions.entrySet().stream().map(entry -> entry.getKey() + "=" + entry.getValue()).forEach(stringJoiner::add);
+            return stringJoiner.toString();
         }
     }
 
