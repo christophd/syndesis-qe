@@ -42,9 +42,11 @@ public class HttpToHttp_IT extends SyndesisIntegrationTestSupport {
     public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
             .withName("http-to-http")
             .fromExport(HttpToHttp_IT.class.getResourceAsStream("HttpToHttp-export.zip"))
+            .customize("$..configuredProperties.schedulerExpression", "5000")
             .customize("$..configuredProperties.baseUrl",
                         String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, todoServerPort))
-            .build();
+            .build()
+            .withExposedPorts(8080);
 
     @Test
     @CitrusTest
@@ -79,7 +81,23 @@ public class HttpToHttp_IT extends SyndesisIntegrationTestSupport {
                 .response(HttpStatus.ACCEPTED));
 
         runner.receiveTimeout(builder -> builder.endpoint(todoApiServer)
-                .timeout(5000L));
+                .timeout(1000L));
+    }
+
+    @Test
+    @CitrusTest
+    public void testHttpToHttpEmptyBody(@CitrusResource TestRunner runner) {
+        runner.http(builder -> builder.server(todoApiServer)
+                .receive()
+                .get());
+
+        runner.http(builder -> builder.server(todoApiServer)
+                .send()
+                .response(HttpStatus.OK)
+                .payload("[]"));
+
+        runner.receiveTimeout(builder -> builder.endpoint(todoApiServer)
+                .timeout(1000L));
     }
 
     @Configuration

@@ -28,6 +28,7 @@ import com.consol.citrus.http.client.HttpClient;
 import io.syndesis.qe.itest.SyndesisIntegrationTestSupport;
 import io.syndesis.qe.itest.containers.integration.SyndesisIntegrationRuntimeContainer;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -100,6 +101,20 @@ public class TodoListApi_IT extends SyndesisIntegrationTestSupport {
                 .payload("[{\"id\":\"@ignore@\",\"name\":\"Wash the dog\",\"done\":0}," +
                             "{\"id\":\"@ignore@\",\"name\":\"Feed the dog\",\"done\":0}," +
                             "{\"id\":\"@ignore@\",\"name\":\"Play with the dog\",\"done\":0}]"));
+    }
+
+    @Test
+    @Ignore //until https://github.com/atlasmap/atlasmap/issues/846 is fixed
+    @CitrusTest
+    public void testGetEmptyTodoList(@CitrusResource TestRunner runner) {
+        runner.http(builder -> builder.client(todoListApiClient)
+                .send()
+                .get("/todos"));
+
+        runner.http(builder -> builder.client(todoListApiClient)
+                .receive()
+                .response(HttpStatus.OK)
+                .payload("[]"));
     }
 
     @Configuration

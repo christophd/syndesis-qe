@@ -13,6 +13,7 @@ import io.syndesis.qe.itest.containers.amq.JBossAMQBrokerContainer;
 import io.syndesis.qe.itest.containers.integration.SyndesisIntegrationRuntimeContainer;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -51,6 +52,7 @@ public class HttpToAMQ_IT extends SyndesisIntegrationTestSupport {
     public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
             .withName("http-to-amq")
             .fromExport(HttpToAMQ_IT.class.getResourceAsStream("HttpToAMQ-export.zip"))
+            .customize("$..configuredProperties.schedulerExpression", "5000")
             .customize("$..configuredProperties.baseUrl",
                         String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, todoServerPort))
             .build()
@@ -72,6 +74,23 @@ public class HttpToAMQ_IT extends SyndesisIntegrationTestSupport {
         runner.receive(builder -> builder.endpoint(todoJms)
                         .payload("[{\"id\": \"1\", \"name\":\"Learn to play drums\", \"done\": 0}," +
                                   "{\"id\": \"2\", \"name\":\"Learn to play guitar\", \"done\": 1}]"));
+    }
+
+    @Test
+    @Ignore //until https://github.com/atlasmap/atlasmap/issues/846 is fixed
+    @CitrusTest
+    public void testHttpToAMQEmptyList(@CitrusResource TestRunner runner) {
+        runner.http(builder -> builder.server(todoApiServer)
+                .receive()
+                .get());
+
+        runner.http(builder -> builder.server(todoApiServer)
+                .send()
+                .response(HttpStatus.OK)
+                .payload("[]"));
+
+        runner.receive(builder -> builder.endpoint(todoJms)
+                        .payload("[]"));
     }
 
     @Configuration
