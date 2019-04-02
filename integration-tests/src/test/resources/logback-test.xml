@@ -29,6 +29,13 @@
     <file>target/integration-test.log</file>
   </appender>
 
+  <appender name="INTEGRATION_RUNTIME_FILE" class="ch.qos.logback.core.FileAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%-15.15thread] %-5level %-30.30logger - %msg%n</pattern>
+    </encoder>
+    <file>target/integration-runtime.log</file>
+  </appender>
+
   <logger name="org.apache.camel.util.IntrospectionSupport" level="INFO"/>
   <logger name="org.apache.camel" level="INFO"/>
   <logger name="io.syndesis" level="DEBUG"/>
@@ -36,8 +43,12 @@
   <logger name="org.springframework" level="INFO"/>
   <logger name="org.eclipse.jetty" level="WARN"/>
 
+  <logger name="INTEGRATION_RUNTIME_CONTAINER" level="INFO">
+    <appender-ref ref="INTEGRATION_RUNTIME_FILE"/>
+  </logger>
+
   <root level="DEBUG">
-    <appender-ref ref="STDOUT"/>
+    <!-- appender-ref ref="STDOUT"/-->
     <appender-ref ref="FILE"/>
   </root>
 

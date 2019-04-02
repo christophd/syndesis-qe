@@ -417,4 +417,21 @@ public void testHttpToHttp(@CitrusResource TestRunner runner) {
 
 The test expects an incoming `GET` request on `/todos` on the simulated Citrus service. Citrus the is supposed to respond with a sample list of todo tasks.
 
-This way wen can control the test data returned by 3rd party services and we implicitly validate that the integration connects to the 3rd party services. 
+This way wen can control the test data returned by 3rd party services and we implicitly validate that the integration connects to the 3rd party services.
+
+## Logging
+
+By default the integration tests log output to a file `target/integration-test.log`. You can also enable logging to the console in `src/main/resources/logback-test.xml`.
+
+When running containers the log output is not visible by default. You need to enable logging on the container:
+
+```java
+@ClassRule
+public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
+        .withName("http-to-http")
+        .fromExport(HttpToHttp_IT.class.getResourceAsStream("HttpToHttp-export.zip"))
+        .enableLogging()
+        .build();
+``` 
+
+The `enableLogging` setting enables container logging to the logback logger. By default the container logs are sent to a separate log file `target/integration-runtime.log`.

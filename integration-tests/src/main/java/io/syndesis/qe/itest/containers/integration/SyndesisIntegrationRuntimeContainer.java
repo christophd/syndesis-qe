@@ -19,8 +19,10 @@ import io.syndesis.qe.itest.integration.supplier.CustomizerAwareIntegrationSuppl
 import io.syndesis.qe.itest.integration.supplier.ExportIntegrationSupplier;
 import io.syndesis.qe.itest.integration.supplier.IntegrationSupplier;
 import io.syndesis.qe.itest.integration.supplier.JsonIntegrationSupplier;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 
 /**
@@ -69,6 +71,7 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
         private String imageTag = SyndesisTestEnvironment.getSyndesisImageTag();
 
         private boolean deleteOnExit = true;
+        private boolean enableLogging = false;
 
         private IntegrationProjectProvider projectProvider;
         private IntegrationSupplier integrationSupplier;
@@ -79,13 +82,20 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
             CustomizerAwareIntegrationSupplier supplier = new CustomizerAwareIntegrationSupplier(integrationSupplier, customizers);
             Path projectPath = getProjectProvider().buildProject(supplier);
 
+            SyndesisIntegrationRuntimeContainer container;
             if (Files.isDirectory(projectPath)) {
                 //Run directly from project source directory
-                return new SyndesisIntegrationRuntimeContainer(imageTag, name, projectPath, deleteOnExit);
+                container = new SyndesisIntegrationRuntimeContainer(imageTag, name, projectPath, deleteOnExit);
             } else {
                 //Run project fat jar
-                return new SyndesisIntegrationRuntimeContainer(imageTag, name, projectPath.toFile(), deleteOnExit);
+                container = new SyndesisIntegrationRuntimeContainer(imageTag, name, projectPath.toFile(), deleteOnExit);
             }
+
+            if (enableLogging) {
+                container.withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("INTEGRATION_RUNTIME_CONTAINER")));
+            }
+
+            return container;
         }
 
         public Builder withName(String name) {
@@ -172,6 +182,11 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
 
         public Builder withIntegrationCustomizer(IntegrationCustomizer customizer) {
             this.customizers.add(customizer);
+            return this;
+        }
+
+        public Builder enableLogging() {
+            this.enableLogging = true;
             return this;
         }
 
