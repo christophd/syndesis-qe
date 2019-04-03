@@ -46,15 +46,17 @@
   <logger name="org.apache.camel.util.IntrospectionSupport" level="INFO"/>
   <logger name="org.apache.camel" level="INFO"/>
   <logger name="io.syndesis" level="DEBUG"/>
-  <logger name="com.consol.citrus" level="DEBUG"/>
+  <logger name="com.consol.citrus" level="INFO"/>
   <logger name="org.springframework" level="INFO"/>
   <logger name="org.eclipse.jetty" level="WARN"/>
 
   <logger name="INTEGRATION_RUNTIME_CONTAINER" level="INFO">
+    <!--appender-ref ref="STDOUT"/-->
     <appender-ref ref="INTEGRATION_RUNTIME_FILE"/>
   </logger>
 
   <logger name="SERVER_CONTAINER" level="INFO">
+    <!--appender-ref ref="STDOUT"/-->
     <appender-ref ref="SERVER_CONTAINER_FILE"/>
   </logger>
 

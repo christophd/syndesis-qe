@@ -10,14 +10,16 @@ the database.
 * [Setup and preparations](#setup-and-preparations)
 * [Test environment](#test-environment)
 * [Running tests](#running-tests)
-* [Syndesis integration runtime](#syndesis-integration-runtime)
+    * [Use latest snapshot versions](#use-latest-snapshot-versions)
+    * [Use release versions](#use-release-versions)
+* [Syndesis integration runtime container](#syndesis-integration-runtime-container)
   * [From integration export](#from-integration-export)
   * [From integration model](#from-integration-model)
   * [From integration fat jar](#from-integration-fat-jar)
   * [From integration project](#from-integration-project)
   * [From integration json](#from-integration-json)
 * [Syndesis db container](#syndesis-db-container)
-* [Syndesis server container](#syndesis-server)
+* [Syndesis server container](#syndesis-server-container)
 * [Infrastructure containers](#infrastructure-containers)
   * [AMQ Message Broker](#amq-message-broker)
   * [Kafka Message Broker](#kafka-message-broker)
@@ -29,13 +31,15 @@ the database.
 ## Setup and preparations
 
 The integration tests in this repository use [JUnit](https://junit.org/), [Testcontainers](https://www.testcontainers.org/) 
-and [Citrus](https://citrusframework.org/) as base frameworks. 
+and [Citrus](https://citrusframework.org/) as base frameworks.
 
-Each integration test prepares and starts a group of Docker containers as Testcontainers. 
-These containers represent Syndesis backend server functionality, Syndesis integration runtime and infrastructure components 
-such as Postgres DB, Kafka or AMQ message brokers. In addition to that the tests prepares 3rd party services that get simulated with Citrus framework.
+The frameworks are automatically downloaded for you using Maven so you do not worry about having to download or install these tools. 
 
-You need [Docker](https://www.docker.com/) available on your host to run the tests.
+Each integration test prepares and starts a group of Docker images as Testcontainers. Therefore you need [Docker](https://www.docker.com/) 
+available on your host to run the tests.
+ 
+The containers used in the integration test project represent Syndesis backend servers, Syndesis integration runtimes and infrastructure components 
+such as Postgres DB, Kafka or AMQ message brokers. In addition to that the tests prepares simulated 3rd party services with the [Citrus](https://citrusframework.org/) framework.
 
 ## Test environment
 
@@ -43,13 +47,15 @@ The integration tests usually exchange data with Syndesis integrations. Therefor
 primary system under test.
 
 Each test uses a specific group of required infrastructure components and builds its very specific Syndesis integration runtime 
-as a Testcontainer. All required infrastructure components and the defined integration runtime are built and run automatically before the test.
+as a Testcontainer. The test builds and runs all required infrastructure components and the defined Syndesis integration runtime automatically. If not 
+already available on your local host the integration tests will automatically load all artifacts (such as Docker images, Java libraries and Syndesis artifacts)
+using an internet connection.  
 
-Once the test infrastructure is provided with Testcontainers the test interacts with the running Syndesis integration. Usually the test invokes
-the integration start connection and consumes the integration output for verification.
+Once the test infrastructure is setup with Testcontainers the test interacts with a running Syndesis integration. Usually the test invokes/triggers
+the integration starting connection and consumes the integration output for verification.
 
-Each test defines the required components individually so Testcontainers are automatically started and stopped before and after the tests. All tests share
-a common Postgres database container that holds the Syndesis data as well as sample database tables to test data.
+Each test defines the required components individually so required Testcontainers are automatically started and stopped before and after the tests. All tests share
+a common Postgres database container that holds the Syndesis persistent data as well as sample database tables (todo and contact) used with some test data.
 
 ### System properties / environment variables
 
@@ -61,7 +67,8 @@ The following system properties (or environment variables) are known to the proj
 * **syndesis.version** / **SYNDESIS_VERSION**
     * Version of Syndesis used as system under test. By default this is the latest SNAPSHOT version. You can also use tagged 
     release or daily build versions as listed here: [https://github.com/syndesisio/syndesis/releases](https://github.com/syndesisio/syndesis/releases)
-    Maven artifact versions are translated to Docker hub image versions (e.g. 1.7-SNAPSHOT=latest).
+    Maven artifact versions are translated to Docker hub image versions. For example the Maven snapshot version `1.7-SNAPSHOT` is 
+    translated to the Docker image tag `latest`. Specifying a Syndesis release version is very useful to run the tests with a specific release or nightly build.
 * **syndesis.image.tag** / **SYNDESIS_IMAGE_TAG**
     * Docker image tag to use for all Syndesis images. You can use this explicit image version when automatic version translation 
     form Maven artifact name is not working for you.
@@ -72,8 +79,8 @@ The following system properties (or environment variables) are known to the proj
 * **syndesis.logging.enabled** / **SYNDESIS_LOGGING_ENABLED**
     * GLobally enables container logging (default=false).
 * **syndesis.s2i.build.enabled** / **SYNDESIS_S2I_BUILD_ENABLED**
-    * By default the test containers use a Spring Boot build an runtime environment in the Syndesis integration runtime container. You can also use
-    the S2i image to build and run the integration. The S2i image build is close to production but slower in execution.
+    * By default the test containers use a Spring Boot build and runtime environment in the Syndesis integration runtime container. You can also use
+    the S2i image to build and run the integration. The S2i image build is very close to production but indeed slower in its build time.
 
 ## Running tests
 
@@ -95,13 +102,70 @@ mvn verify -Dit.test=MyTestClassName
 mvn verify -Dit.test=MyTestClassName#mytestMethodName
 ```
 
-## Syndesis integration runtime
+## Use latest snapshot versions
 
-Syndesis executes integrations with a special runtime container. The container is usually provided with a generated integration project holding all sources needed to run the
-integration (such as integration.json, pom.xml, atlas-mappings, application.properties, secrets and so on). The integration runtime container usually builds from the `syndesis-s2i:latest` 
-Docker image that already holds all required Syndesis artifacts and required 3rd party libs.
+If you do not specify anything different the integration tests will use the latest Syndesis version available. This can be the Syndesis Docker images tagged with `latest` or
+a local build of Syndesis using the very latest code base on your local host.
 
-The integration tests provide a Testcontainer that represents the runtime container. You can add the integration runtime container to your tests in following ways.
+In case you want to use the very latest code base on your local host you need to clone and build the Syndesis project first on your machine.
+
+```bash
+git clone https://github.com/syndesisio/syndesis.git
+```
+
+After cloning the project you have to build the whole thing with:
+
+```bash
+cd syndesis
+tools/bin/syndesis build -f
+```
+
+Now you can build the Docker images locally:
+
+```bash
+tools/bin/syndesis build -m s2i -i -f --docker
+```
+
+After that you should see a new Docker image `syndesis/syndesis-s2i:latest`
+
+```bash
+docker images
+
+REPOSITORY              TAG                 IMAGE ID                  
+syndesis/syndesis-s2i   latest              e27b19a7717d               
+syndesis/syndesis-s2i   1.6.7               e556ebf9d6b9                 
+```
+
+You can now run the integration tests and they will use that local Syndesis version.
+
+## Use release versions
+
+By default the integration tests run with the latest Syndesis SNAPSHOT version. This usually is the latest SNAPSHOT version built on your local host. In case you do not have
+the latest SNAPSHOT version built on your machine you may want to explicitly specify a release version of Syndesis. The tests will then run with that particular version of Syndesis as
+a system under test.
+
+All required artifacts and Docker images are loaded form Maven central and Dockerhub so you might bring some time for that pull to finish. But once you have the versions loaded subsequent
+build just use the already downloaded artifacts.
+
+You can specify the Syndesis version as system property:
+
+```bash
+mvn clean verify -Dsyndesis.version=1.6.7
+```
+
+The comand above runs the tests with the Syndesis release version `1.6.7`. 
+
+Here is a list of available releases: [https://github.com/syndesisio/syndesis/releases](https://github.com/syndesisio/syndesis/releases)
+
+Syndesis also provides a daily release build that can be used for continuous integration.
+
+## Syndesis integration runtime container
+
+Syndesis executes integrations with a special runtime container. The container is usually provided with a generated integration project holding all sources required to run the
+integration (such as integration.json, pom.xml, atlas-mappings, application.properties, secrets and so on). The integration runtime container usually builds from the `syndesis/syndesis-s2i:latest` 
+Docker image that brings all required Syndesis artifacts and required 3rd party libs.
+
+The integration tests provide a Testcontainer that represents the integration runtime container. You can add the integration runtime container to your tests in following ways.
 
 First of all you can use a JUnit class rule and add the container to your test. 
 
@@ -116,7 +180,7 @@ public static SyndesisIntegrationRuntimeContainer integrationContainer = new Syn
 This creates a new Syndesis runtime container and starts the integration from an export file `TimerToLog-export.zip`. This integration runtime container is shared for all test methods 
 in that test class. 
 
-In case you do require an explicit runtime container within a test method you can just initialize the container and start it.
+In case you want the runtime container to be part of a test method you can just initialize the container and start it by yourself.
 
 ```java
 @Test
@@ -135,10 +199,13 @@ public void timeToLogExportTest() {
 
 The `try-with-resources` block ensures that the container is stopped once the test is finished.
 
+You can start several runtime containers within a test. The container uses an integration source that defines the integration logic. You ca use multiple sources
+of integrations to build the container.
+
 ### From integration export
 
 You can run exported integrations in the runtime container. This is the most convenient way to start the integration as every information required to run the integration is bundled in the
-export file. You can customize the integration properties though using integration customizers.
+export file. You can customize the integration properties though using [integration customizers](#customize-integrations).
 
 ```java
 @ClassRule
@@ -151,7 +218,7 @@ public static SyndesisIntegrationRuntimeContainer integrationContainer = new Syn
 ### From integration model
 
 You can create the integration model and run that integration in the runtime container. The integration model can be seen easily within the test and you can
-create variations of that integration very easy.
+create variations of that integration for instance when using a parameterized test.
 
 ```java
 @ClassRule
@@ -194,13 +261,13 @@ public static SyndesisIntegrationRuntimeContainer integrationContainer = new Syn
 
 ### From integration fat jar 
 
-If you have a integration project fat jar you can build the integration runtime container directly with that jar file.
+If you have an integration project fat jar available you can build the integration runtime container directly with that project jar file.
 
 ```java
 @ClassRule
 public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
                 .withName("timer-to-log-jar")
-                .fromFatJar(Paths.get("/path/to/project.jar"))
+                .fromFatJar(Paths.get("/path/to/syndesis-project.jar"))
                 .build();
 ```
 
@@ -229,6 +296,21 @@ public static SyndesisIntegrationRuntimeContainer integrationContainer = new Syn
                 .build();
 ```
 
+### Runtime S2i execution modes
+
+The integration runtime container takes an integration source and builds the container with the `syndesis/syndesis-s2i:latest` image as base. The S2i image
+traditionally uses a run script to execute fat project jars. The project fat jar is built before in an assemble step. This is close to production where the same
+mechanism applies to integrations that get published in Openshift.
+
+On the downside the S2i image build takes some more time to finish assembling and running the integration project as it required two Docker containers to run separately.
+The first Docker container performs the assemble step and the 2nd container executes the built fat jar.
+
+This close to production S2i mechanism is enabled with the system property **syndesis.s2i.build.enabled=true**.
+
+By default this mechanis is disabled in order to gain some more speed in test execution. When the S2i mode is disabled the integration runtime container will
+directly execute the project with `mvn spring-boot:run`. Still the integration is run inside using the `syndesis/syndesis-s2i:latest` base image but the assemble step
+is skipped and we do not execute the fat jar with `java -jar`. Instead a the Spring Boot maven plugin is used.   
+
 ## Syndesis db container
 
 Syndesis uses a database to store integrations and connections in a Postgres storage. The integration tests provide a Postgres Testcontainer that is
@@ -254,7 +336,7 @@ public static SyndesisIntegrationRuntimeContainer integrationContainer = new Syn
 You can use `withNetwork(getSyndesisDb().getNetwork())` to access the database from a running integration. The `syndesis-db` container uses proper network aliases to ensure that
 the integration is able to connect using the default SQL connector settings.
 
-## Syndesis server
+## Syndesis server container
 
 This container starts the Syndesis backend server. The container connects to the database container and provides REST services usually called via the Syndesis UI. The
 container starts with some default properties set:
