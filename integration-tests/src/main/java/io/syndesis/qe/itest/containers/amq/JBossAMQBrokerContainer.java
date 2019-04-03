@@ -9,6 +9,12 @@ import org.testcontainers.containers.wait.strategy.Wait;
  */
 public class JBossAMQBrokerContainer extends GenericContainer<JBossAMQBrokerContainer> {
 
+    private static final int OPENWIRE_PORT = 61616;
+    private static final int STOMP_PORT = 61613;
+    private static final int AMQP_PORT = 5672;
+    private static final int MQTT_PORT = 1883;
+    private static final int JOLOKIA_PORT = 8778;
+
     private final String username = "amq";
     private final String password = "secret";
 
@@ -23,11 +29,11 @@ public class JBossAMQBrokerContainer extends GenericContainer<JBossAMQBrokerCont
         withEnv("AMQ_PASSWORD", password);
         withEnv("AMQ_TRANSPORTS", "openwire,stomp,amqp,mqtt");
 
-        withExposedPorts(61616);//openwire
-        withExposedPorts(61613);//stomp
-        withExposedPorts(5672);//amqp
-        withExposedPorts(1883);//mqtt
-        withExposedPorts(8778);//jolokia
+        withExposedPorts(OPENWIRE_PORT);
+        withExposedPorts(STOMP_PORT);
+        withExposedPorts(AMQP_PORT);
+        withExposedPorts(MQTT_PORT);
+        withExposedPorts(JOLOKIA_PORT);
 
         withNetwork(Network.newNetwork());
         withNetworkAliases("broker-amq-tcp");
@@ -38,23 +44,23 @@ public class JBossAMQBrokerContainer extends GenericContainer<JBossAMQBrokerCont
     }
 
     public int getOpenwirePort() {
-        return getMappedPort(61616);
+        return getMappedPort(OPENWIRE_PORT);
     }
 
     public int getStompPort() {
-        return getMappedPort(61613);
+        return getMappedPort(STOMP_PORT);
     }
 
     public int getAmqpPort() {
-        return getMappedPort(5672);
+        return getMappedPort(AMQP_PORT);
     }
 
     public int getMqttPort() {
-        return getMappedPort(1883);
+        return getMappedPort(MQTT_PORT);
     }
 
     public int getJolokiaPort() {
-        return getMappedPort(8778);
+        return getMappedPort(JOLOKIA_PORT);
     }
 
     /**

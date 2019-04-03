@@ -12,6 +12,12 @@
   <artifactId>integration-tests</artifactId>
   <name>syndesis integration tests</name>
 
+  <properties>
+    <syndesis.logging.enabled>false</syndesis.logging.enabled>
+    <syndesis.debug.enabled>false</syndesis.debug.enabled>
+    <syndesis.debug.port>5005</syndesis.debug.port>
+  </properties>
+
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -234,6 +240,9 @@
         <configuration>
           <systemProperties>
             <syndesis.version>${syndesis.version}</syndesis.version>
+            <syndesis.logging.enabled>${syndesis.logging.enabled}</syndesis.logging.enabled>
+            <syndesis.debug.enabled>${syndesis.debug.enabled}</syndesis.debug.enabled>
+            <syndesis.debug.port>${syndesis.debug.port}</syndesis.debug.port>
           </systemProperties>
         </configuration>
         <executions>

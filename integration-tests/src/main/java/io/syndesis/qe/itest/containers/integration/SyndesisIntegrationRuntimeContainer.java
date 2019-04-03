@@ -119,8 +119,8 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
         private String imageTag = SyndesisTestEnvironment.getSyndesisImageTag();
 
         private boolean deleteOnExit = true;
-        private boolean enableLogging ;
-        private boolean enableDebug;
+        private boolean enableLogging = SyndesisTestEnvironment.isLoggingEnabled();
+        private boolean enableDebug = SyndesisTestEnvironment.isDebugEnabled();
 
         private IntegrationProjectProvider projectProvider;
         private IntegrationSupplier integrationSupplier;

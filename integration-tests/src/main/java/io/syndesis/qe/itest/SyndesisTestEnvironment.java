@@ -30,6 +30,12 @@ public final class SyndesisTestEnvironment {
     private static final String SYNDESIS_DEBUG_PORT = SYNDESIS_PREFIX + "debug.port";
     private static final String SYNDESIS_DEBUG_PORT_ENV = SYNDESIS_ENV_PREFIX + "DEBUG_PORT";
 
+    private static final String SYNDESIS_LOGGING_ENABLED = SYNDESIS_PREFIX + "logging.enabled";
+    private static final String SYNDESIS_LOGGING_ENABLED_ENV = SYNDESIS_ENV_PREFIX + "LOGGING_ENABLED";
+
+    private static final String SYNDESIS_DEBUG_ENABLED = SYNDESIS_PREFIX + "debug.enabled";
+    private static final String SYNDESIS_DEBUG_ENABLED_ENV = SYNDESIS_ENV_PREFIX + "DEBUG_ENABLED";
+
     private static final String S2I_BUILD_ENABLED = SYNDESIS_PREFIX + "s2i.build.enabled";
     private static final String S2I_BUILD_ENABLED_ENV = SYNDESIS_ENV_PREFIX + "S2I_BUILD_ENABLED";
 
@@ -72,6 +78,14 @@ public final class SyndesisTestEnvironment {
 
     public static int getDebugPort() {
         return Integer.valueOf(System.getProperty(SYNDESIS_DEBUG_PORT, System.getenv(SYNDESIS_DEBUG_PORT_ENV) != null ? System.getenv(SYNDESIS_DEBUG_PORT_ENV) : "5005"));
+    }
+
+    public static boolean isLoggingEnabled() {
+        return Boolean.valueOf(System.getProperty(SYNDESIS_LOGGING_ENABLED, System.getenv(SYNDESIS_LOGGING_ENABLED_ENV) != null ? System.getenv(SYNDESIS_LOGGING_ENABLED_ENV) : "false"));
+    }
+
+    public static boolean isDebugEnabled() {
+        return Boolean.valueOf(System.getProperty(SYNDESIS_DEBUG_ENABLED, System.getenv(SYNDESIS_DEBUG_ENABLED_ENV) != null ? System.getenv(SYNDESIS_DEBUG_ENABLED_ENV) : "false"));
     }
 
     public static boolean isS2iBuildEnabled() {
