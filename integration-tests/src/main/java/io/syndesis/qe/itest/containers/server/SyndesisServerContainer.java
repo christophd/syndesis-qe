@@ -5,18 +5,25 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.StringJoiner;
 
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports;
 import io.syndesis.qe.itest.SyndesisTestEnvironment;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 
 /**
  * @author Christoph Deppisch
  */
 public class SyndesisServerContainer extends GenericContainer<SyndesisServerContainer> {
+
+    private static final int SERVER_PORT = 8080;
+    private static final int JOLOKIA_PORT = 8778;
 
     private SyndesisServerContainer(String imageTag, String javaOptions) {
         super(String.format("syndesis/syndesis-server:%s", imageTag));
@@ -27,7 +34,7 @@ public class SyndesisServerContainer extends GenericContainer<SyndesisServerCont
         super(new ImageFromDockerfile("syndesis-server", deleteOnExit)
                 .withDockerfileFromBuilder(builder -> builder.from("fabric8/s2i-java:3.0-java8")
                              .env("JAVA_OPTIONS", javaOptions)
-                             .expose(8080, 8778)
+                             .expose(SERVER_PORT, JOLOKIA_PORT, SyndesisTestEnvironment.getDebugPort())
                              .build()));
 
         withClasspathResourceMapping(serverJarPath,"/deployments/server.jar", BindMode.READ_ONLY);
@@ -36,7 +43,8 @@ public class SyndesisServerContainer extends GenericContainer<SyndesisServerCont
     public static class Builder {
         private String imageTag = SyndesisTestEnvironment.getSyndesisImageTag();
         private boolean deleteOnExit = true;
-        private boolean enableLogging = false;
+        private boolean enableLogging = SyndesisTestEnvironment.isLoggingEnabled();
+        private boolean enableDebug = SyndesisTestEnvironment.isDebugEnabled();
 
         private String serverJarPath;
 
@@ -68,8 +76,16 @@ public class SyndesisServerContainer extends GenericContainer<SyndesisServerCont
             }
 
             container.withCreateContainerCmdModifier(createContainerCmd -> createContainerCmd.withName("syndesis-server"));
-            container.withStartupTimeout(Duration.ofSeconds(180));
-            container.withExposedPorts(8080, 8778);
+
+            if (enableDebug) {
+                container.withExposedPorts(SERVER_PORT, JOLOKIA_PORT, SyndesisTestEnvironment.getDebugPort());
+                container.withCreateContainerCmdModifier(cmd -> cmd.withPortBindings(new PortBinding(Ports.Binding.bindPort(SyndesisTestEnvironment.getDebugPort()), new ExposedPort(SyndesisTestEnvironment.getDebugPort()))));
+            } else {
+                container.withExposedPorts(SERVER_PORT, JOLOKIA_PORT);
+            }
+
+            container.waitingFor(new HttpWaitStrategy().forPort(SERVER_PORT)
+                                                       .withStartupTimeout(Duration.ofSeconds(180)));
 
             return container;
         }
@@ -99,12 +115,31 @@ public class SyndesisServerContainer extends GenericContainer<SyndesisServerCont
             return this;
         }
 
+        public SyndesisServerContainer.Builder enableDebug() {
+            this.enableDebug = true;
+            return this;
+        }
+
         private String getJavaOptionString() {
             StringJoiner stringJoiner = new StringJoiner(" -D", "-D", "");
             stringJoiner.setEmptyValue("");
             javaOptions.entrySet().stream().map(entry -> entry.getKey() + "=" + entry.getValue()).forEach(stringJoiner::add);
-            return stringJoiner.toString();
+
+            String optionString = stringJoiner.toString();
+
+            if (enableDebug) {
+                optionString+= String.format(" -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=%s", SyndesisTestEnvironment.getDebugPort());
+            }
+
+            return optionString;
         }
     }
 
+    public int getServerPort() {
+        return getMappedPort(SERVER_PORT);
+    }
+
+    public int getJolokiaPort() {
+        return getMappedPort(JOLOKIA_PORT);
+    }
 }
