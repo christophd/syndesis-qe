@@ -24,6 +24,7 @@ the database.
 * [Simulate 3rd party interfaces](#simulate-3rd-party-interfaces)
 * [Customize integrations](#customize-integrations)
 * [Logging](#logging)
+* [Debugging](#debugging)
 
 ## Setup and preparations
 
@@ -64,6 +65,12 @@ The following system properties (or environment variables) are known to the proj
 * **syndesis.image.tag** / **SYNDESIS_IMAGE_TAG**
     * Docker image tag to use for all Syndesis images. You can use this explicit image version when automatic version translation 
     form Maven artifact name is not working for you.
+* **syndesis.debug.port** / **SYNDESIS_DEBUG_PORT**
+    * Set the debug port to use for remote debugging sessions (default=5005).
+* **syndesis.debug.enabled** / **SYNDESIS_DEBUG_ENABLED**
+    * Enables remote debug on all integration runtime and syndesis-server containers (default=false).
+* **syndesis.logging.enabled** / **SYNDESIS_LOGGING_ENABLED**
+    * GLobally enables container logging (default=false).
 * **syndesis.s2i.build.enabled** / **SYNDESIS_S2I_BUILD_ENABLED**
     * By default the test containers use a Spring Boot build an runtime environment in the Syndesis integration runtime container. You can also use
     the S2i image to build and run the integration. The S2i image build is close to production but slower in execution.
@@ -495,3 +502,40 @@ public static SyndesisIntegrationRuntimeContainer integrationContainer = new Syn
 ``` 
 
 The `enableLogging` setting enables container logging to the logback logger. By default the container logs are sent to a separate log file `target/integration-runtime.log`.
+
+You can als enable logging globally by setting the system property **syndesis.logging.enabled=true**. All containers will use logging and the container output is
+printed to the respective log file appender.
+
+## Debugging
+
+We can start the integration runtime container with debug mode enabled. This exposes a debug port that your favorite IDE can connect to with a remote debug session.
+
+```java
+@ClassRule
+public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
+        .withName("http-to-http")
+        .fromExport(HttpToHttp_IT.class.getResourceAsStream("HttpToHttp-export.zip"))
+        .enableDebug()
+        .build();
+``` 
+
+The only thing we have to do is to add the `enableDebug` option to the integration runtime container. The container will be suspended waiting for a client to open
+the remote debug session using the specified debug port. The debug port (default=5005) is exposed to the Docker host using the very same port. This means that you can instruct your IDE to
+open a new debugging session to `localhost:5005`. In case you need to change the debug port you can use the following system property or environment variable setting:
+
+* **syndesis.debug.port**
+* **SYNDESIS_DEBUG_PORT**
+
+We can pass the debug port as system property to the Maven build, too. It gets automatically set as system property in the maven-failsafe test JVM.
+
+```bash
+mvn clean verify -Dsyndesis.debug.port=5005
+```
+
+You can enable debug options globally by setting the system property **syndesis.debug.enabled=true**. This is useful when executing a single test with debug mode enabled via
+Maven system property:
+
+```bash
+mvn clean verify -Dit.test=MyTestClassName#mytestMethodName -Dsyndesis.debug.enabled=true
+```
+
