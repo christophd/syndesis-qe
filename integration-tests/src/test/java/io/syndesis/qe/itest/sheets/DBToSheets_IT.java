@@ -50,7 +50,7 @@ public class DBToSheets_IT extends SyndesisIntegrationTestSupport {
      */
     @ClassRule
     public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-            .withName("sql-to-sheets")
+            .withName("db-to-sheets")
             .fromExport(DBToSheets_IT.class.getResourceAsStream("DBToSheets-export.zip"))
             .customize("$..rootUrl.defaultValue",
                         String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, googleSheetsServerPort))

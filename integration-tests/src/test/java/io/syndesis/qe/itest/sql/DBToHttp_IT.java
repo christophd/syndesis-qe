@@ -1,10 +1,7 @@
-package io.syndesis.qe.itest.sheets;
+package io.syndesis.qe.itest.sql;
 
-import javax.servlet.Filter;
 import javax.sql.DataSource;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 import com.consol.citrus.annotations.CitrusResource;
 import com.consol.citrus.annotations.CitrusTest;
@@ -12,10 +9,8 @@ import com.consol.citrus.dsl.endpoint.CitrusEndpoints;
 import com.consol.citrus.dsl.runner.TestRunner;
 import com.consol.citrus.dsl.runner.TestRunnerBeforeTestSupport;
 import com.consol.citrus.http.server.HttpServer;
-import com.consol.citrus.http.servlet.RequestCachingServletFilter;
 import io.syndesis.qe.itest.SyndesisIntegrationTestSupport;
 import io.syndesis.qe.itest.containers.integration.SyndesisIntegrationRuntimeContainer;
-import io.syndesis.qe.itest.gzip.GzipServletFilter;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,19 +25,19 @@ import org.testcontainers.containers.GenericContainer;
 /**
  * @author Christoph Deppisch
  */
-@ContextConfiguration(classes = DBSplitToSheets_IT.EndpointConfig.class)
-public class DBSplitToSheets_IT extends SyndesisIntegrationTestSupport {
+@ContextConfiguration(classes = DBToHttp_IT.EndpointConfig.class)
+public class DBToHttp_IT extends SyndesisIntegrationTestSupport {
 
-    private static int googleSheetsServerPort = SocketUtils.findAvailableTcpPort();
+    private static int httpTestServerPort = SocketUtils.findAvailableTcpPort();
     static {
-        Testcontainers.exposeHostPorts(googleSheetsServerPort);
+        Testcontainers.exposeHostPorts(httpTestServerPort);
     }
 
     @Autowired
     private DataSource sampleDb;
 
     @Autowired
-    private HttpServer googleSheetsApiServer;
+    private HttpServer httpTestServer;
 
     /**
      * Integration periodically retrieves all contacts from the database and maps the entries (first_name, last_name, company) to a spreadsheet on a Google Sheets account.
@@ -50,35 +45,36 @@ public class DBSplitToSheets_IT extends SyndesisIntegrationTestSupport {
      */
     @ClassRule
     public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-            .withName("db-split-to-sheets")
-            .fromExport(DBSplitToSheets_IT.class.getResourceAsStream("DBSplitToSheets-export.zip"))
-            .customize("$..rootUrl.defaultValue",
-                        String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, googleSheetsServerPort))
+            .withName("db-to-http")
+            .fromExport(DBToHttp_IT.class.getResourceAsStream("DBToHttp-export.zip"))
+            .customize("$..configuredProperties.schedulerExpression", "5000")
+            .customize("$..configuredProperties.baseUrl",
+                    String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, httpTestServerPort))
             .build()
             .withNetwork(getSyndesisDb().getNetwork());
 
     @Test
     @CitrusTest
-    public void testDBSplitToSheets(@CitrusResource TestRunner runner) {
+    public void testDBToHttp(@CitrusResource TestRunner runner) {
         runner.sql(builder -> builder.dataSource(sampleDb)
-                .statements(Arrays.asList("insert into contact (first_name, last_name, company, lead_source) values ('Joe','Jackson','Red Hat','google-sheets')",
-                                          "insert into contact (first_name, last_name, company, lead_source) values ('Joanne','Jackson','Red Hat','google-sheets')")));
+                .statements(Arrays.asList("insert into contact (first_name, last_name, company) values ('Joe','Jackson','Red Hat')",
+                                "insert into contact (first_name, last_name, company) values ('Joanne','Jackson','Red Hat')")));
 
-        runner.http(builder -> builder.server(googleSheetsApiServer)
-                        .receive()
-                        .put()
-                        .payload("{\"majorDimension\":\"ROWS\",\"values\":[[\"Joe\",\"Jackson\",\"Red Hat\"]]}"));
-
-        runner.http(builder -> builder.server(googleSheetsApiServer)
-                        .send()
-                        .response(HttpStatus.OK));
-
-        runner.http(builder -> builder.server(googleSheetsApiServer)
+        runner.http(builder -> builder.server(httpTestServer)
                 .receive()
                 .put()
-                .payload("{\"majorDimension\":\"ROWS\",\"values\":[[\"Joanne\",\"Jackson\",\"Red Hat\"]]}"));
+                .payload("{\"contact\":\"Joe Jackson Red Hat\"}"));
 
-        runner.http(builder -> builder.server(googleSheetsApiServer)
+        runner.http(builder -> builder.server(httpTestServer)
+                .send()
+                .response(HttpStatus.OK));
+
+        runner.http(builder -> builder.server(httpTestServer)
+                .receive()
+                .put()
+                .payload("{\"contact\":\"Joanne Jackson Red Hat\"}"));
+
+        runner.http(builder -> builder.server(httpTestServer)
                 .send()
                 .response(HttpStatus.OK));
     }
@@ -88,17 +84,12 @@ public class DBSplitToSheets_IT extends SyndesisIntegrationTestSupport {
     public static class EndpointConfig {
 
         @Bean
-        public HttpServer googleSheetsApiServer() {
-            Map<String, Filter> filterMap = new LinkedHashMap<>();
-            filterMap.put("request-caching-filter", new RequestCachingServletFilter());
-            filterMap.put("gzip-filter", new GzipServletFilter());
-
+        public HttpServer httpTestServer() {
             return CitrusEndpoints.http()
                     .server()
-                    .port(googleSheetsServerPort)
+                    .port(httpTestServerPort)
                     .autoStart(true)
                     .timeout(60000L)
-                    .filters(filterMap)
                     .build();
         }
 
@@ -108,10 +99,11 @@ public class DBSplitToSheets_IT extends SyndesisIntegrationTestSupport {
                 @Override
                 public void beforeTest(TestRunner runner) {
                     runner.sql(builder -> builder.dataSource(sampleDb)
-                            .statement("delete from contact where lead_source='google-sheets'"));
+                            .statement("delete from contact"));
                 }
             };
         }
     }
+
 
 }
