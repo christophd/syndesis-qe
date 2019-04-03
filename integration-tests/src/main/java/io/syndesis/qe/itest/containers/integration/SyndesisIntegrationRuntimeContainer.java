@@ -6,7 +6,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.StringJoiner;
 
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports;
 import io.syndesis.common.model.integration.Flow;
 import io.syndesis.common.model.integration.Integration;
 import io.syndesis.qe.itest.SyndesisTestEnvironment;
@@ -37,11 +41,13 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
      * @param integrationName
      * @param projectDir
      * @param deleteOnExit
+     * @param debugEnabled
      */
-    private SyndesisIntegrationRuntimeContainer(String imageTag, String integrationName, Path projectDir, boolean deleteOnExit) {
+    private SyndesisIntegrationRuntimeContainer(String imageTag, String integrationName, Path projectDir, boolean deleteOnExit, boolean debugEnabled) {
         super(new ImageFromDockerfile(integrationName, deleteOnExit)
                 .withDockerfileFromBuilder(builder -> builder.from(String.format("syndesis/syndesis-s2i:%s", imageTag))
-                        .cmd("mvn", "-s", "/tmp/src/configuration/settings.xml", "-f", "/tmp/src", "spring-boot:run", "-Dmaven.repo.local=/tmp/artifacts/m2")
+                        .expose(SyndesisTestEnvironment.getDebugPort())
+                        .cmd(getMavenCommandLine(debugEnabled))
                         .build()));
 
         withFileSystemBind(projectDir.toAbsolutePath().toString(), "/tmp/src", BindMode.READ_WRITE);
@@ -54,15 +60,57 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
      * @param integrationName
      * @param projectJar
      * @param deleteOnExit
+     * @param debugEnabled
      */
-    private SyndesisIntegrationRuntimeContainer(String imageTag, String integrationName, File projectJar, boolean deleteOnExit) {
+    private SyndesisIntegrationRuntimeContainer(String imageTag, String integrationName, File projectJar, boolean deleteOnExit, boolean debugEnabled) {
         super(new ImageFromDockerfile(integrationName, deleteOnExit)
                 .withDockerfileFromBuilder(builder -> builder.from(String.format("syndesis/syndesis-s2i:%s", imageTag))
                         .add("integration-runtime.jar", "/deployments/integration-runtime.jar")
+                        .env("JAVA_OPTIONS", getDebugAgentOption(debugEnabled))
+                        .expose(SyndesisTestEnvironment.getDebugPort())
+                        .cmd(getS2iRunCommandLine(debugEnabled))
                         .build())
                         .withFileFromPath("integration-runtime.jar", projectJar.toPath().toAbsolutePath()));
 
         withCreateContainerCmdModifier(createContainerCmd -> createContainerCmd.withName(integrationName));
+    }
+
+    private static String getMavenCommandLine(boolean debugEnabled) {
+        StringJoiner commandLine = new StringJoiner(" ");
+
+        commandLine.add("mvn");
+        commandLine.add("-s");
+        commandLine.add("/tmp/src/configuration/settings.xml");
+        commandLine.add("-f");
+        commandLine.add("/tmp/src");
+        commandLine.add("spring-boot:run");
+        commandLine.add("-Dmaven.repo.local=/tmp/artifacts/m2");
+
+        if (debugEnabled) {
+            commandLine.add(getDebugJvmArguments(debugEnabled));
+        }
+
+        return commandLine.toString();
+    }
+
+    private static String getDebugJvmArguments(boolean debugEnabled) {
+        return debugEnabled ? String.format("-Drun.jvmArguments=\"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=%s\"", SyndesisTestEnvironment.getDebugPort()) : "";
+    }
+
+    private static String getS2iRunCommandLine(boolean debugEnabled) {
+        StringJoiner commandLine = new StringJoiner(" ");
+
+        commandLine.add("mvn");
+
+        if (debugEnabled) {
+            commandLine.add("--debug");
+        }
+
+        return commandLine.toString();
+    }
+
+    private static String getDebugAgentOption(boolean debugEnabled) {
+        return debugEnabled ? String.format("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=%s", SyndesisTestEnvironment.getDebugPort()) : "";
     }
 
     public static class Builder {
@@ -71,7 +119,8 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
         private String imageTag = SyndesisTestEnvironment.getSyndesisImageTag();
 
         private boolean deleteOnExit = true;
-        private boolean enableLogging = false;
+        private boolean enableLogging ;
+        private boolean enableDebug;
 
         private IntegrationProjectProvider projectProvider;
         private IntegrationSupplier integrationSupplier;
@@ -85,14 +134,19 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
             SyndesisIntegrationRuntimeContainer container;
             if (Files.isDirectory(projectPath)) {
                 //Run directly from project source directory
-                container = new SyndesisIntegrationRuntimeContainer(imageTag, name, projectPath, deleteOnExit);
+                container = new SyndesisIntegrationRuntimeContainer(imageTag, name, projectPath, deleteOnExit, enableDebug);
             } else {
                 //Run project fat jar
-                container = new SyndesisIntegrationRuntimeContainer(imageTag, name, projectPath.toFile(), deleteOnExit);
+                container = new SyndesisIntegrationRuntimeContainer(imageTag, name, projectPath.toFile(), deleteOnExit, enableDebug);
             }
 
             if (enableLogging) {
                 container.withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("INTEGRATION_RUNTIME_CONTAINER")));
+            }
+
+            if (enableDebug) {
+                container.withExposedPorts(SyndesisTestEnvironment.getDebugPort());
+                container.withCreateContainerCmdModifier(cmd -> cmd.withPortBindings(new PortBinding(Ports.Binding.bindPort(SyndesisTestEnvironment.getDebugPort()), new ExposedPort(SyndesisTestEnvironment.getDebugPort()))));
             }
 
             return container;
@@ -193,6 +247,11 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
 
         public Builder enableLogging() {
             this.enableLogging = true;
+            return this;
+        }
+
+        public Builder enableDebug() {
+            this.enableDebug = true;
             return this;
         }
 

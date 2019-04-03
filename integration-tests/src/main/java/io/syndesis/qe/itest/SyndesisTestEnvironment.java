@@ -27,6 +27,9 @@ public final class SyndesisTestEnvironment {
     private static final String SYNDESIS_IMAGE_TAG = SYNDESIS_PREFIX + "image.tag";
     private static final String SYNDESIS_IMAGE_TAG_ENV = SYNDESIS_ENV_PREFIX + "IMAGE_TAG";
 
+    private static final String SYNDESIS_DEBUG_PORT = SYNDESIS_PREFIX + "debug.port";
+    private static final String SYNDESIS_DEBUG_PORT_ENV = SYNDESIS_ENV_PREFIX + "DEBUG_PORT";
+
     private static final String S2I_BUILD_ENABLED = SYNDESIS_PREFIX + "s2i.build.enabled";
     private static final String S2I_BUILD_ENABLED_ENV = SYNDESIS_ENV_PREFIX + "S2I_BUILD_ENABLED";
 
@@ -65,6 +68,10 @@ public final class SyndesisTestEnvironment {
         }
 
         return System.getProperty(SYNDESIS_IMAGE_TAG, System.getenv(SYNDESIS_IMAGE_TAG_ENV) != null ? System.getenv(SYNDESIS_IMAGE_TAG_ENV) : projectVersion);
+    }
+
+    public static int getDebugPort() {
+        return Integer.valueOf(System.getProperty(SYNDESIS_DEBUG_PORT, System.getenv(SYNDESIS_DEBUG_PORT_ENV) != null ? System.getenv(SYNDESIS_DEBUG_PORT_ENV) : "5005"));
     }
 
     public static boolean isS2iBuildEnabled() {
