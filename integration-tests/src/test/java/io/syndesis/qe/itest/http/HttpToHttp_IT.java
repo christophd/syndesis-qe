@@ -40,13 +40,13 @@ public class HttpToHttp_IT extends SyndesisIntegrationTestSupport {
      */
     @ClassRule
     public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-            .withName("http-to-http")
+            .name("http-to-http")
             .fromExport(HttpToHttp_IT.class.getResourceAsStream("HttpToHttp-export.zip"))
             .customize("$..configuredProperties.schedulerExpression", "5000")
             .customize("$..configuredProperties.baseUrl",
                         String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, todoServerPort))
             .build()
-            .withExposedPorts(8080);
+            .withExposedPorts(SyndesisIntegrationRuntimeContainer.SERVER_PORT);
 
     @Test
     @CitrusTest

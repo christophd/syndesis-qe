@@ -9,6 +9,12 @@ import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 
 /**
+ * Syndesis S2i container that performs assemble step on a give project directory. The project sources are assembled to
+ * a runnable project fat jar using fabric8 S2i assemble script.
+ *
+ * The container uses the Syndesis S2i image as base. This image already holds all required Syndesis libraries and artifacts
+ * with the given version.
+ *
  * @author Christoph Deppisch
  */
 public class SyndesisS2iContainer extends GenericContainer<SyndesisS2iContainer> {

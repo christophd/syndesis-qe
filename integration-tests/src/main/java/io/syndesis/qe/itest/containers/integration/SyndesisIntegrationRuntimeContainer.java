@@ -30,9 +30,19 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 
 /**
+ * Container that executes a integration runtime. The container is either provided with a runnable project fat jar or a project directory
+ * holding the sources to run the integration.
+ *
+ * All Syndesis dependencies (artifacts, 3rd party libs) are already bundled with the syndesis-s2i base image.
+ *
+ * When using a fat jar the fabric8 S2i run script is called to executes the jar. When using a project source directory a plain Spring Boot
+ * run command is used to build and run the sources.
+ *
  * @author Christoph Deppisch
  */
 public class SyndesisIntegrationRuntimeContainer extends GenericContainer<SyndesisIntegrationRuntimeContainer> {
+
+    public static final int SERVER_PORT = 8080;
 
     /**
      * Uses Spring Boot Maven build to run the integration project. Much faster as S2i build because we can directly use the project sources.
@@ -152,22 +162,22 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
             return container;
         }
 
-        public Builder withName(String name) {
+        public Builder name(String name) {
             this.name = name.startsWith("i-") ? name : "i-" + name;
             return this;
         }
 
-        public Builder withSyndesisVersion(String version) {
+        public Builder syndesisVersion(String version) {
             this.syndesisVersion = version;
             return this;
         }
 
-        public Builder withImageTag(String tag) {
+        public Builder imageTag(String tag) {
             this.imageTag = tag;
             return this;
         }
 
-        public Builder withDeleteOnExit(boolean deleteOnExit) {
+        public Builder deleteOnExit(boolean deleteOnExit) {
             this.deleteOnExit = deleteOnExit;
             return this;
         }
@@ -266,5 +276,9 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
                 return new ProjectProvider(name, syndesisVersion);
             }
         }
+    }
+
+    public int getServerPort() {
+        return getMappedPort(SERVER_PORT);
     }
 }

@@ -9,6 +9,7 @@ import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
 import io.syndesis.qe.itest.SyndesisTestEnvironment;
+import io.syndesis.qe.itest.containers.db.SyndesisDbContainer;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import org.testcontainers.containers.BindMode;
@@ -56,7 +57,7 @@ public class SyndesisServerContainer extends GenericContainer<SyndesisServerCont
             javaOptions.put("openshift.enabled", "false");
             javaOptions.put("metrics.kind", "noop");
             javaOptions.put("features.monitoring.enabled", "false");
-            javaOptions.put("spring.datasource.url", "jdbc:postgresql://syndesis-db:5432/syndesis?sslmode=disable");
+            javaOptions.put("spring.datasource.url", String.format("jdbc:postgresql://syndesis-db:%s/syndesis?sslmode=disable", SyndesisDbContainer.DB_PORT));
             javaOptions.put("spring.datasource.username", "syndesis");
             javaOptions.put("spring.datasource.password", "secret");
             javaOptions.put("spring.datasource.driver-class-name", "org.postgresql.Driver");
@@ -90,7 +91,7 @@ public class SyndesisServerContainer extends GenericContainer<SyndesisServerCont
             return container;
         }
 
-        public SyndesisServerContainer.Builder withImageTag(String tag) {
+        public SyndesisServerContainer.Builder imageTag(String tag) {
             this.imageTag = tag;
             return this;
         }
@@ -105,7 +106,7 @@ public class SyndesisServerContainer extends GenericContainer<SyndesisServerCont
             return this;
         }
 
-        public SyndesisServerContainer.Builder withDeleteOnExit(boolean deleteOnExit) {
+        public SyndesisServerContainer.Builder deleteOnExit(boolean deleteOnExit) {
             this.deleteOnExit = deleteOnExit;
             return this;
         }

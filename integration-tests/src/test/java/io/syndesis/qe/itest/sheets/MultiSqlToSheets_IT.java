@@ -32,7 +32,7 @@ public class MultiSqlToSheets_IT extends SheetsIntegrationTestSupport {
      */
     @ClassRule
     public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-            .withName("multi-sql-to-sheets")
+            .name("multi-sql-to-sheets")
             .fromExport(MultiSqlToSheets_IT.class.getResourceAsStream("MultiSqlToSheets-export.zip"))
             .customize("$..rootUrl.defaultValue",
                         String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, googleSheetsServerPort))

@@ -49,7 +49,7 @@ public class AMQToHttp_IT extends SyndesisIntegrationTestSupport {
      */
     @ClassRule
     public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-            .withName("amq-to-http")
+            .name("amq-to-http")
             .fromExport(AMQToHttp_IT.class.getResourceAsStream("AMQToHttp-export.zip"))
             .customize("$..configuredProperties.baseUrl",
                         String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, todoServerPort))

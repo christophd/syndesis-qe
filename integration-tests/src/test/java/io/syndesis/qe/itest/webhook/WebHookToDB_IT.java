@@ -56,11 +56,11 @@ public class WebHookToDB_IT extends SyndesisIntegrationTestSupport {
      */
     @ClassRule
     public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-                            .withName("webhook-to-db")
+                            .name("webhook-to-db")
                             .fromExport(WebHookToDB_IT.class.getResourceAsStream("WebhookToDB-export.zip"))
                             .build()
                             .withNetwork(getSyndesisDb().getNetwork())
-                            .withExposedPorts(8080);
+                            .withExposedPorts(SyndesisIntegrationRuntimeContainer.SERVER_PORT);
 
     @Test
     @CitrusTest
@@ -123,7 +123,7 @@ public class WebHookToDB_IT extends SyndesisIntegrationTestSupport {
         @Bean
         public HttpClient webHookClient() {
             return CitrusEndpoints.http().client()
-                    .requestUrl(String.format("http://localhost:%s/webhook/test-webhook", integrationContainer.getMappedPort(8080)))
+                    .requestUrl(String.format("http://localhost:%s/webhook/test-webhook", integrationContainer.getServerPort()))
                     .build();
         }
 

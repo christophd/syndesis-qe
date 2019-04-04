@@ -50,7 +50,7 @@ public class HttpToAMQ_IT extends SyndesisIntegrationTestSupport {
      */
     @ClassRule
     public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-            .withName("http-to-amq")
+            .name("http-to-amq")
             .fromExport(HttpToAMQ_IT.class.getResourceAsStream("HttpToAMQ-export.zip"))
             .customize("$..configuredProperties.schedulerExpression", "5000")
             .customize("$..configuredProperties.baseUrl",

@@ -45,7 +45,7 @@ public class DBToHttp_IT extends SyndesisIntegrationTestSupport {
      */
     @ClassRule
     public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-            .withName("db-to-http")
+            .name("db-to-http")
             .fromExport(DBToHttp_IT.class.getResourceAsStream("DBToHttp-export.zip"))
             .customize("$..configuredProperties.schedulerExpression", "5000")
             .customize("$..configuredProperties.baseUrl",

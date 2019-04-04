@@ -24,7 +24,7 @@ public class TimerToLog_IT extends SyndesisIntegrationTestSupport {
     @Test
     public void timeToLogTest() {
         SyndesisIntegrationRuntimeContainer.Builder integrationContainerBuilder = new SyndesisIntegrationRuntimeContainer.Builder()
-                .withName("timer-to-log")
+                .name("timer-to-log")
                 .fromFlow(new Flow.Builder()
                     .steps(Arrays.asList(new Step.Builder()
                         .stepKind(StepKind.endpoint)
@@ -67,7 +67,7 @@ public class TimerToLog_IT extends SyndesisIntegrationTestSupport {
     @Test
     public void timeToLogExportTest() {
         SyndesisIntegrationRuntimeContainer.Builder integrationContainerBuilder = new SyndesisIntegrationRuntimeContainer.Builder()
-                .withName("timer-to-log-export")
+                .name("timer-to-log-export")
                 .fromExport(TimerToLog_IT.class.getResourceAsStream("TimerToLog-export.zip"));
 
         try (SyndesisIntegrationRuntimeContainer integrationContainer = integrationContainerBuilder.build()
@@ -79,7 +79,7 @@ public class TimerToLog_IT extends SyndesisIntegrationTestSupport {
     @Test
     public void timeToLogJsonTest() {
         SyndesisIntegrationRuntimeContainer.Builder integrationContainerBuilder = new SyndesisIntegrationRuntimeContainer.Builder()
-                .withName("timer-to-log-json")
+                .name("timer-to-log-json")
                 .fromSupplier(new JsonIntegrationSupplier(TimerToLog_IT.class.getResource("TimerToLog.json")));
 
         try (SyndesisIntegrationRuntimeContainer integrationContainer = integrationContainerBuilder.build()

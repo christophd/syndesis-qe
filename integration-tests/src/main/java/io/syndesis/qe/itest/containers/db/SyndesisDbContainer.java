@@ -11,7 +11,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
  */
 public class SyndesisDbContainer extends PostgreSQLContainer<SyndesisDbContainer> {
 
-    private static final int POSTGRES_PORT = 5432;
+    public static final int DB_PORT = 5432;
 
     public SyndesisDbContainer() {
         withDatabaseName("sampledb");
@@ -19,7 +19,7 @@ public class SyndesisDbContainer extends PostgreSQLContainer<SyndesisDbContainer
         withPassword("secret");
 
         withCreateContainerCmdModifier(cmd -> cmd.withName("syndesis-db"));
-        withCreateContainerCmdModifier(cmd -> cmd.withPortBindings(new PortBinding(Ports.Binding.bindPort(POSTGRES_PORT), new ExposedPort(POSTGRES_PORT))));
+        withCreateContainerCmdModifier(cmd -> cmd.withPortBindings(new PortBinding(Ports.Binding.bindPort(DB_PORT), new ExposedPort(DB_PORT))));
         withInitScript("syndesis-db-init.sql");
 
         withNetwork(Network.newNetwork());

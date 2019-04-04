@@ -57,11 +57,11 @@ public class TodoListApi_IT extends SyndesisIntegrationTestSupport {
      */
     @ClassRule
     public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-                            .withName("todo-list-api")
+                            .name("todo-list-api")
                             .fromExport(TodoListApi_IT.class.getResourceAsStream("TodoListApi-export.zip"))
                             .build()
                             .withNetwork(getSyndesisDb().getNetwork())
-                            .withExposedPorts(8080);
+                            .withExposedPorts(SyndesisIntegrationRuntimeContainer.SERVER_PORT);
 
     @Test
     @CitrusTest
@@ -122,7 +122,7 @@ public class TodoListApi_IT extends SyndesisIntegrationTestSupport {
         @Bean
         public HttpClient todoListApiClient() {
             return CitrusEndpoints.http().client()
-                    .requestUrl(String.format("http://localhost:%s", integrationContainer.getMappedPort(8080)))
+                    .requestUrl(String.format("http://localhost:%s", integrationContainer.getServerPort()))
                     .build();
         }
 

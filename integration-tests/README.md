@@ -172,7 +172,7 @@ First of all you can use a JUnit class rule and add the container to your test.
 ```java
 @ClassRule
 public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-                .withName("timer-to-log-export")
+                .name("timer-to-log-export")
                 .fromExport(TimerToLog_IT.class.getResourceAsStream("TimerToLog-export.zip"))
                 .build();
 ```
@@ -186,7 +186,7 @@ In case you want the runtime container to be part of a test method you can just 
 @Test
 public void timeToLogExportTest() {
     SyndesisIntegrationRuntimeContainer.Builder integrationContainerBuilder = new SyndesisIntegrationRuntimeContainer.Builder()
-            .withName("timer-to-log-export")
+            .name("timer-to-log-export")
             .fromExport(TimerToLog_IT.class.getResourceAsStream("TimerToLog-export.zip"));
 
     try (SyndesisIntegrationRuntimeContainer integrationContainer = integrationContainerBuilder.build()) {
@@ -210,7 +210,7 @@ export file. You can customize the integration properties though using [integrat
 ```java
 @ClassRule
 public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-                .withName("timer-to-log-export")
+                .name("timer-to-log-export")
                 .fromExport(TimerToLog_IT.class.getResourceAsStream("TimerToLog-export.zip"))
                 .build();
 ```
@@ -223,7 +223,7 @@ create variations of that integration for instance when using a parameterized te
 ```java
 @ClassRule
 public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-    .withName("timer-to-log")
+    .name("timer-to-log")
     .fromFlow(new Flow.Builder()
             .steps(Arrays.asList(new Step.Builder()
                     .stepKind(StepKind.endpoint)
@@ -266,7 +266,7 @@ If you have an integration project fat jar available you can build the integrati
 ```java
 @ClassRule
 public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-                .withName("timer-to-log-jar")
+                .name("timer-to-log-jar")
                 .fromFatJar(Paths.get("/path/to/syndesis-project.jar"))
                 .build();
 ```
@@ -279,7 +279,7 @@ The integration runtime container will use a volume mount to that directory.
 ```java
 @ClassRule
 public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-                .withName("timer-to-log-dir")
+                .name("timer-to-log-dir")
                 .fromProjectDir(Paths.get("/path/to/project-dir"))
                 .build();
 ```
@@ -291,7 +291,7 @@ Last not least you can provide a Json model file representing the integration to
 ```java
 @ClassRule
 public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-                .withName("timer-to-log-json")
+                .name("timer-to-log-json")
                 .fromSupplier(new JsonIntegrationSupplier(TimerToLog_IT.class.getResource("TimerToLog.json")))
                 .build();
 ```
@@ -326,11 +326,11 @@ In case an integration runtime container needs access to the database you can ad
 ```java
 @ClassRule
 public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-                        .withName("webhook-to-db")
+                        .name("webhook-to-db")
                         .fromExport(WebHookToDB_IT.class.getResourceAsStream("WebhookToDB-export.zip"))
                         .build()
                         .withNetwork(getSyndesisDb().getNetwork())
-                        .withExposedPorts(8080);
+                        .withExposedPorts(SyndesisIntegrationRuntimeContainer.SERVER_PORT);
 ```
 
 You can use `withNetwork(getSyndesisDb().getNetwork())` to access the database from a running integration. The `syndesis-db` container uses proper network aliases to ensure that
@@ -434,7 +434,7 @@ As usual this is done using `withNetwork(amqBrokerContainer.getNetwork())` confi
 ```java
 @ClassRule
 public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-        .withName("amq-to-http")
+        .name("amq-to-http")
         .fromExport(AMQToHttp_IT.class.getResourceAsStream("AMQToHttp-export.zip"))
         .customize("$..configuredProperties.baseUrl",
                     String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, todoServerPort))
@@ -481,7 +481,7 @@ Testcontainers such as our integration runtime container can now connect to the 
 ```java
 @ClassRule
 public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-        .withName("http-to-http")
+        .name("http-to-http")
         .fromExport(HttpToHttp_IT.class.getResourceAsStream("HttpToHttp-export.zip"))
         .customize("$..configuredProperties.baseUrl",
                     String.format("http:/host.testcontainers.internal:%s", todoServerPort))
@@ -527,7 +527,7 @@ You can overwrite any configured property in the integration export using JsonPa
 ```java
 @ClassRule
 public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-        .withName("http-to-google-sheets")
+        .name("http-to-google-sheets")
         .fromExport(HttpToHttp_IT.class.getResourceAsStream("HttpToGoogleSheets-export.zip"))
         .customize("$..configuredProperties.baseUrl",
                 String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, todoServerPort))
@@ -556,7 +556,7 @@ applicable to automated tests. You can overwrite the timer period with integrati
 ```java
 @ClassRule
 public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-        .withName("http-to-amq")
+        .name("http-to-amq")
         .fromExport(HttpToAMQ_IT.class.getResourceAsStream("HttpToAMQ-export.zip"))
         .customize("$..configuredProperties.schedulerExpression", "1000")
         .customize("$..configuredProperties.baseUrl",
@@ -577,7 +577,7 @@ When running containers the log output is not visible by default. You need to en
 ```java
 @ClassRule
 public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-        .withName("http-to-http")
+        .name("http-to-http")
         .fromExport(HttpToHttp_IT.class.getResourceAsStream("HttpToHttp-export.zip"))
         .enableLogging()
         .build();
@@ -595,7 +595,7 @@ We can start the integration runtime container with debug mode enabled. This exp
 ```java
 @ClassRule
 public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
-        .withName("http-to-http")
+        .name("http-to-http")
         .fromExport(HttpToHttp_IT.class.getResourceAsStream("HttpToHttp-export.zip"))
         .enableDebug()
         .build();
