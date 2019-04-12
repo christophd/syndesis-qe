@@ -88,13 +88,13 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
     private static String getMavenCommandLine(boolean debugEnabled) {
         StringJoiner commandLine = new StringJoiner(" ");
 
-        commandLine.add("mvn");
-        commandLine.add("-s");
-        commandLine.add("/tmp/src/configuration/settings.xml");
-        commandLine.add("-f");
-        commandLine.add("/tmp/src");
-        commandLine.add("spring-boot:run");
-        commandLine.add("-Dmaven.repo.local=/tmp/artifacts/m2");
+        commandLine.add("mvn")
+                   .add("-s")
+                   .add("/tmp/src/configuration/settings.xml")
+                   .add("-f")
+                   .add("/tmp/src")
+                   .add("spring-boot:run")
+                   .add("-Dmaven.repo.local=/tmp/artifacts/m2");
 
         if (debugEnabled) {
             commandLine.add(getDebugJvmArguments(debugEnabled));
@@ -110,7 +110,7 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
     private static String getS2iRunCommandLine(boolean debugEnabled) {
         StringJoiner commandLine = new StringJoiner(" ");
 
-        commandLine.add("mvn");
+        commandLine.add("/usr/local/s2i/run");
 
         if (debugEnabled) {
             commandLine.add("--debug");
