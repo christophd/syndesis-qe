@@ -77,7 +77,7 @@ public class HttpToAMQ_IT extends SyndesisIntegrationTestSupport {
     }
 
     @Test
-    @Ignore //until https://github.com/atlasmap/atlasmap/issues/846 is fixed
+    @Ignore //until Syndesis uses AtlasMap 1.40.x
     @CitrusTest
     public void testHttpToAMQEmptyList(@CitrusResource TestRunner runner) {
         runner.http(builder -> builder.server(todoApiServer)

@@ -104,7 +104,7 @@ public class TodoListApi_IT extends SyndesisIntegrationTestSupport {
     }
 
     @Test
-    @Ignore //until https://github.com/atlasmap/atlasmap/issues/846 is fixed
+    @Ignore //until Syndesis uses AtlasMap 1.40.x
     @CitrusTest
     public void testGetEmptyTodoList(@CitrusResource TestRunner runner) {
         runner.http(builder -> builder.client(todoListApiClient)
