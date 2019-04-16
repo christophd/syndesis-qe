@@ -21,8 +21,8 @@ import org.testcontainers.Testcontainers;
 /**
  * @author Christoph Deppisch
  */
-@ContextConfiguration(classes = SheetsIntegrationTestSupport.EndpointConfig.class)
-public class SheetsIntegrationTestSupport extends SyndesisIntegrationTestSupport {
+@ContextConfiguration(classes = GoogleSheetsTestSupport.EndpointConfig.class)
+public class GoogleSheetsTestSupport extends SyndesisIntegrationTestSupport {
 
     static int googleSheetsServerPort = SocketUtils.findAvailableTcpPort();
     static {

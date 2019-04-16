@@ -17,7 +17,7 @@ import org.testcontainers.containers.GenericContainer;
 /**
  * @author Christoph Deppisch
  */
-public class DBSplitToSheets_IT extends SheetsIntegrationTestSupport {
+public class DBSplitToSheets_IT extends GoogleSheetsTestSupport {
 
     @Autowired
     private DataSource sampleDb;
