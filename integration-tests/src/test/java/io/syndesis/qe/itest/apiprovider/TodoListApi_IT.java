@@ -28,7 +28,6 @@ import com.consol.citrus.http.client.HttpClient;
 import io.syndesis.qe.itest.SyndesisIntegrationTestSupport;
 import io.syndesis.qe.itest.containers.integration.SyndesisIntegrationRuntimeContainer;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -104,7 +103,6 @@ public class TodoListApi_IT extends SyndesisIntegrationTestSupport {
     }
 
     @Test
-    @Ignore //until Syndesis uses AtlasMap 1.40.x
     @CitrusTest
     public void testGetEmptyTodoList(@CitrusResource TestRunner runner) {
         runner.http(builder -> builder.client(todoListApiClient)

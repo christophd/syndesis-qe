@@ -13,7 +13,6 @@ import io.syndesis.qe.itest.containers.amq.JBossAMQBrokerContainer;
 import io.syndesis.qe.itest.containers.integration.SyndesisIntegrationRuntimeContainer;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -77,7 +76,6 @@ public class HttpToAMQ_IT extends SyndesisIntegrationTestSupport {
     }
 
     @Test
-    @Ignore //until Syndesis uses AtlasMap 1.40.x
     @CitrusTest
     public void testHttpToAMQEmptyList(@CitrusResource TestRunner runner) {
         runner.http(builder -> builder.server(todoApiServer)
