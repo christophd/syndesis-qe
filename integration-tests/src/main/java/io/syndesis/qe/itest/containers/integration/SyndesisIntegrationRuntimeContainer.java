@@ -43,6 +43,7 @@ import org.testcontainers.images.builder.ImageFromDockerfile;
 public class SyndesisIntegrationRuntimeContainer extends GenericContainer<SyndesisIntegrationRuntimeContainer> {
 
     public static final int SERVER_PORT = 8080;
+    private String internalHostIp;
 
     /**
      * Uses Spring Boot Maven build to run the integration project. Much faster as S2i build because we can directly use the project sources.
@@ -280,5 +281,18 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
 
     public int getServerPort() {
         return getMappedPort(SERVER_PORT);
+    }
+
+    public String getInternalHostIp() {
+        return internalHostIp;
+    }
+
+    @Override
+    public SyndesisIntegrationRuntimeContainer withExtraHost(String hostname, String ipAddress) {
+        if (INTERNAL_HOST_HOSTNAME.equals(hostname)) {
+            this.internalHostIp = ipAddress;
+        }
+
+        return super.withExtraHost(hostname, ipAddress);
     }
 }

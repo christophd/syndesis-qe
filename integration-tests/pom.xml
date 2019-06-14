@@ -62,6 +62,11 @@
         <artifactId>citrus-http</artifactId>
         <version>${citrus.version}</version>
       </dependency>
+      <dependency>
+        <groupId>com.consol.citrus</groupId>
+        <artifactId>citrus-ftp</artifactId>
+        <version>${citrus.version}</version>
+      </dependency>
 
       <dependency>
         <groupId>org.hibernate</groupId>
@@ -117,6 +122,10 @@
     <dependency>
       <groupId>com.consol.citrus</groupId>
       <artifactId>citrus-http</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.consol.citrus</groupId>
+      <artifactId>citrus-ftp</artifactId>
     </dependency>
 
     <dependency>
