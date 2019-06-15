@@ -1,0 +1,152 @@
+/*
+ * Copyright (C) 2016 Red Hat, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.syndesis.qe.itest.mail;
+
+import javax.sql.DataSource;
+import java.io.IOException;
+
+import com.consol.citrus.annotations.CitrusResource;
+import com.consol.citrus.annotations.CitrusTest;
+import com.consol.citrus.dsl.endpoint.CitrusEndpoints;
+import com.consol.citrus.dsl.runner.TestRunner;
+import com.consol.citrus.dsl.runner.TestRunnerBeforeTestSupport;
+import com.consol.citrus.http.client.HttpClient;
+import com.consol.citrus.mail.message.MailMessage;
+import com.consol.citrus.mail.server.MailServer;
+import com.consol.citrus.util.FileUtils;
+import io.syndesis.qe.itest.SyndesisIntegrationTestSupport;
+import io.syndesis.qe.itest.containers.integration.SyndesisIntegrationRuntimeContainer;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpStatus;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.util.SocketUtils;
+import org.testcontainers.Testcontainers;
+import org.testcontainers.containers.GenericContainer;
+
+/**
+ * @author Christoph Deppisch
+ */
+@ContextConfiguration(classes = SendMail_IT.EndpointConfig.class)
+public class SendMail_IT extends SyndesisIntegrationTestSupport {
+
+    static int mailServerPort = SocketUtils.findAvailableTcpPort();
+    static {
+        Testcontainers.exposeHostPorts(mailServerPort);
+    }
+
+    @Autowired
+    private HttpClient webHookClient;
+
+    @Autowired
+    private MailServer mailServer;
+
+    @Autowired
+    private DataSource sampleDb;
+
+    /**
+     * This integration provides a webhook that expects a POST request with some contact Json object as payload. The
+     * incoming contact (first_name, company, mail) triggers a send mail activity with a welcome message.
+     *
+     * After the mail is sent a new task entry for that contact is added to the sample database.
+     */
+    @ClassRule
+    public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
+                            .name("send-mail")
+                            .fromExport(SendMail_IT.class.getResourceAsStream("SendMail-export.zip"))
+                            .customize("$..configuredProperties.host", GenericContainer.INTERNAL_HOST_HOSTNAME)
+                            .customize("$..configuredProperties.port", mailServerPort)
+                            .enableLogging()
+                            .build()
+                            .withNetwork(getSyndesisDb().getNetwork())
+                            .withExposedPorts(SyndesisIntegrationRuntimeContainer.SERVER_PORT);
+
+    @Test
+    @CitrusTest
+    public void testSendMail(@CitrusResource TestRunner runner) throws IOException {
+        runner.variable("first_name", "John");
+        runner.variable("company", "Red Hat");
+        runner.variable("email", "john@syndesis.org");
+
+        runner.http(builder -> builder.client(webHookClient)
+                .send()
+                .post()
+                .fork(true)
+                .payload("{\"first_name\":\"${first_name}\",\"company\":\"${company}\",\"mail\":\"${email}\"}"));
+
+        String mailBody = FileUtils.readToString(new ClassPathResource("mail.txt", SendMail_IT.class));
+        runner.receive(builder -> builder.endpoint(mailServer)
+                        .message(MailMessage.request()
+                                .from("people-team@syndesis.org")
+                                .to("${email}")
+                                .cc("")
+                                .bcc("")
+                                .subject("Welcome!")
+                                .body(mailBody, "application/json; charset=UTF-8")));
+
+        runner.send(builder -> builder.endpoint(mailServer)
+                        .message(MailMessage.response(250, "OK")));
+
+        runner.http(builder -> builder.client(webHookClient)
+                .receive()
+                .response(HttpStatus.NO_CONTENT));
+
+        verifyRecordsInDb(runner, 1, "New hire for ${first_name} from ${company}");
+    }
+
+    private void verifyRecordsInDb(TestRunner runner, int numberOfRecords, String task) {
+        runner.query(builder -> builder.dataSource(sampleDb)
+                .statement("select count(*) as found_records from todo where task='" + task + "'")
+                .validate("found_records", String.valueOf(numberOfRecords)));
+    }
+
+    @Configuration
+    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
+    public static class EndpointConfig {
+        @Bean
+        public HttpClient webHookClient() {
+            return CitrusEndpoints.http().client()
+                    .requestUrl(String.format("http://localhost:%s/webhook/test-webhook", integrationContainer.getServerPort()))
+                    .build();
+        }
+
+        @Bean
+        public MailServer mailServer() {
+            return CitrusEndpoints.mail().server()
+                    .timeout(60000L)
+                    .autoStart(true)
+                    .autoAccept(true)
+                    .port(mailServerPort)
+                    .build();
+        }
+
+        @Bean
+        public TestRunnerBeforeTestSupport beforeTest(DataSource sampleDb) {
+            return new TestRunnerBeforeTestSupport() {
+                @Override
+                public void beforeTest(TestRunner runner) {
+                    runner.sql(builder -> builder.dataSource(sampleDb)
+                                                 .statement("delete from todo where task like 'New hire for%'"));
+                }
+            };
+        }
+    }
+}
