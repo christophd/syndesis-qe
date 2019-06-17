@@ -1,7 +1,6 @@
 package io.syndesis.qe.itest.integration.customizer;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.UUID;
 
 import io.syndesis.common.model.action.ConnectorAction;
@@ -64,8 +63,9 @@ public class JsonPathIntegrationCustomizerTest {
                     .build())
                 .build();
 
-        Assert.assertEquals(toCustomize, new JsonPathIntegrationCustomizer(Collections.emptyMap()).apply(toCustomize));
+        Assert.assertEquals(toCustomize, new JsonPathIntegrationCustomizer(null, null, null).apply(toCustomize));
         Assert.assertEquals("customized", new JsonPathIntegrationCustomizer("$..connection-property", "customized").apply(toCustomize).getConnections().get(0).getConfiguredProperties().get("connection-property"));
         Assert.assertEquals("customized", new JsonPathIntegrationCustomizer("$..customText", "customized").apply(toCustomize).getFlows().get(0).getSteps().get(1).getConfiguredProperties().get("customText"));
+        Assert.assertEquals("foo", new JsonPathIntegrationCustomizer("$..configuredProperties", "new_key", "foo").apply(toCustomize).getFlows().get(0).getSteps().get(1).getConfiguredProperties().get("new_key"));
     }
 }

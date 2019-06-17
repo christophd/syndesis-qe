@@ -1,8 +1,6 @@
 package io.syndesis.qe.itest.integration.customizer;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
 
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
@@ -11,25 +9,30 @@ import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import io.syndesis.common.model.integration.Integration;
 import io.syndesis.common.util.Json;
+import org.apache.camel.util.ObjectHelper;
 
 /**
  * @author Christoph Deppisch
  */
 public class JsonPathIntegrationCustomizer implements IntegrationCustomizer {
 
-    private final Map<String, Object> expressions;
+    private final String expression;
+    private final String key;
+    private final Object value;
 
     public JsonPathIntegrationCustomizer(String expression, Object value) {
-        this(Collections.singletonMap(expression, value));
+        this(expression, null, value);
     }
 
-    public JsonPathIntegrationCustomizer(Map<String, Object> expressions) {
-        this.expressions = expressions;
+    public JsonPathIntegrationCustomizer(String expression, String key, Object value) {
+        this.expression = expression;
+        this.key = key;
+        this.value = value;
     }
 
     @Override
     public Integration apply(Integration integration) {
-        if (expressions.isEmpty()) {
+        if (ObjectHelper.isEmpty(expression)) {
             return integration;
         }
 
@@ -40,8 +43,11 @@ public class JsonPathIntegrationCustomizer implements IntegrationCustomizer {
                     .build();
 
             DocumentContext json = JsonPath.using(configuration).parse(Json.writer().forType(Integration.class).writeValueAsString(integration));
-            for (Map.Entry<String, Object> expression : expressions.entrySet()) {
-                json.set(expression.getKey(), expression.getValue());
+
+            if (ObjectHelper.isEmpty(key)) {
+                json.set(expression, value);
+            } else {
+                json.put(expression, key, value);
             }
 
             return Json.reader().forType(Integration.class).readValue(json.jsonString());

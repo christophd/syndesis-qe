@@ -246,10 +246,14 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
         }
 
         public Builder customize(String expression, Object value) {
-            this.customizers.add(new JsonPathIntegrationCustomizer(expression, value));
+            withIntegrationCustomizer(new JsonPathIntegrationCustomizer(expression, value));
             return this;
         }
 
+        public Builder customize(String expression, String key, Object value) {
+            withIntegrationCustomizer(new JsonPathIntegrationCustomizer(expression, key, value));
+            return this;
+        }
 
         public Builder withIntegrationCustomizer(IntegrationCustomizer customizer) {
             this.customizers.add(customizer);
