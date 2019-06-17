@@ -25,6 +25,7 @@ import com.consol.citrus.dsl.endpoint.CitrusEndpoints;
 import com.consol.citrus.dsl.runner.TestRunner;
 import com.consol.citrus.dsl.runner.TestRunnerBeforeTestSupport;
 import com.consol.citrus.http.client.HttpClient;
+import com.consol.citrus.mail.message.CitrusMailMessageHeaders;
 import com.consol.citrus.mail.message.MailMessage;
 import com.consol.citrus.mail.server.MailServer;
 import com.consol.citrus.util.FileUtils;
@@ -90,7 +91,7 @@ public class SendMail_IT extends SyndesisIntegrationTestSupport {
                 .send()
                 .post()
                 .fork(true)
-                .payload("{\"first_name\":\"${first_name}\",\"company\":\"${company}\",\"mail\":\"${email}\"}"));
+                .payload(getWebhookPayload()));
 
         String mailBody = FileUtils.readToString(new ClassPathResource("mail.txt", SendMail_IT.class));
         runner.receive(builder -> builder.endpoint(mailServer)
@@ -112,6 +113,38 @@ public class SendMail_IT extends SyndesisIntegrationTestSupport {
         verifyRecordsInDb(runner, 1, "New hire for ${first_name} from ${company}");
     }
 
+    @Test
+    @CitrusTest
+    public void testSendMailError(@CitrusResource TestRunner runner) {
+        runner.variable("first_name", "Joanne");
+        runner.variable("company", "Red Hat");
+        runner.variable("email", "joanne@syndesis.org");
+
+        runner.http(builder -> builder.client(webHookClient)
+                .send()
+                .post()
+                .fork(true)
+                .payload(getWebhookPayload()));
+
+        runner.receive(builder -> builder.endpoint(mailServer)
+                        .header(CitrusMailMessageHeaders.MAIL_FROM, "people-team@syndesis.org")
+                        .header(CitrusMailMessageHeaders.MAIL_TO, "${email}")
+                        .header(CitrusMailMessageHeaders.MAIL_SUBJECT, "Welcome!"));
+
+        runner.send(builder -> builder.endpoint(mailServer)
+                        .message(MailMessage.response(421, "Service not available, closing transmission channel")));
+
+        runner.http(builder -> builder.client(webHookClient)
+                .receive()
+                .response(HttpStatus.INTERNAL_SERVER_ERROR));
+
+        verifyRecordsInDb(runner, 0, "New hire for ${first_name} from ${company}");
+    }
+
+    private String getWebhookPayload() {
+        return "{\"first_name\":\"${first_name}\",\"company\":\"${company}\",\"mail\":\"${email}\"}";
+    }
+
     private void verifyRecordsInDb(TestRunner runner, int numberOfRecords, String task) {
         runner.query(builder -> builder.dataSource(sampleDb)
                 .statement("select count(*) as found_records from todo where task='" + task + "'")
@@ -119,7 +152,6 @@ public class SendMail_IT extends SyndesisIntegrationTestSupport {
     }
 
     @Configuration
-    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     public static class EndpointConfig {
         @Bean
         public HttpClient webHookClient() {
