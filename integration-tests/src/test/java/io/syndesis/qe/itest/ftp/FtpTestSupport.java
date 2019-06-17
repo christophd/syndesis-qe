@@ -1,8 +1,8 @@
 package io.syndesis.qe.itest.ftp;
 
 import javax.sql.DataSource;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -16,12 +16,13 @@ import org.apache.commons.net.ftp.FTPCmd;
 import org.apache.ftpserver.DataConnectionConfiguration;
 import org.apache.ftpserver.listener.ListenerFactory;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.util.FileCopyUtils;
 import org.springframework.util.SocketUtils;
 import org.testcontainers.Testcontainers;
 
@@ -30,6 +31,9 @@ import org.testcontainers.Testcontainers;
  */
 @ContextConfiguration(classes = FtpTestSupport.EndpointConfig.class)
 public abstract class FtpTestSupport extends SyndesisIntegrationTestSupport {
+
+    /** Logger */
+    private static final Logger LOG = LoggerFactory.getLogger(FtpTestSupport.class);
 
     static int ftpTestServerPort = SocketUtils.findAvailableTcpPort();
     static int passivePort = SocketUtils.findAvailableTcpPort(35000);
@@ -61,6 +65,7 @@ public abstract class FtpTestSupport extends SyndesisIntegrationTestSupport {
                             FTPCmd.NOOP.getCommand(),
                             FTPCmd.SYST.getCommand(),
                             FTPCmd.LIST.getCommand(),
+                            FTPCmd.NLST.getCommand(),
                             FTPCmd.QUIT.getCommand(),
                             FTPCmd.TYPE.getCommand()));
             endpointConfiguration.setPort(ftpTestServerPort);
@@ -91,17 +96,26 @@ public abstract class FtpTestSupport extends SyndesisIntegrationTestSupport {
     @BeforeClass
     public static void setupFtpUserHome() {
         try {
-            Path ftpUserHome = Paths.get("target/ftp/user/syndesis/public");
-            if (!ftpUserHome.toFile().exists() && !ftpUserHome.toFile().mkdirs()) {
-                throw new CitrusRuntimeException("Failed to setup ftp user home directory");
+            Path publicUserDir = getFtpUserHome().resolve("public");
+            if (Files.exists(publicUserDir)) {
+                Files.walk(publicUserDir).forEach(path -> {
+                    try {
+                        Files.delete(path);
+                    } catch (IOException e) {
+                        LOG.warn("Failed to delete file", e);
+                    }
+                });
+            } else {
+                Files.createDirectories(publicUserDir);
             }
 
-            File todoFile = ftpUserHome.resolve("todo.json").toFile();
-            if (!todoFile.exists()) {
-                FileCopyUtils.copy(new ClassPathResource("todo.json", FtpToDB_IT.class).getFile(), todoFile);
-            }
+            Files.copy(new ClassPathResource("todo.json", FtpToDB_IT.class).getFile().toPath(), publicUserDir.resolve("todo.json"));
         } catch (IOException e) {
-            throw new CitrusRuntimeException("Failed to add files to ftp user home directory", e);
+            throw new CitrusRuntimeException("Failed to setup files in ftp user home directory", e);
         }
+    }
+
+    public static Path getFtpUserHome() {
+        return Paths.get("target/ftp/user/syndesis");
     }
 }
