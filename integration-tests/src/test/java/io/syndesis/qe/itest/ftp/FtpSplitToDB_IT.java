@@ -53,8 +53,9 @@ public class FtpSplitToDB_IT extends FtpTestSupport {
                 .message(FtpMessage.success()));
 
         runner.repeatOnError()
+                .startsWith(1)
                 .autoSleep(1000L)
-                .until(Matchers.greaterThan(100))
+                .until(Matchers.greaterThan(10))
                 .actions(runner.query(builder -> builder.dataSource(sampleDb)
                         .statement("select count(*) as found_records from todo")
                         .validate("found_records", String.valueOf(3))));
