@@ -21,12 +21,15 @@ public final class SyndesisTestEnvironment {
     private static final String SYNDESIS_ENV_PREFIX = "SYNDESIS";
 
     /** System property names */
+    private static final String SYNDESIS_VERSION_DEFAULT = "1.7-SNAPSHOT";
     private static final String SYNDESIS_VERSION = SYNDESIS_PREFIX + "version";
     private static final String SYNDESIS_VERSION_ENV = SYNDESIS_ENV_PREFIX + "VERSION";
 
+    private static final String SYNDESIS_IMAGE_TAG_DEFAULT = "latest";
     private static final String SYNDESIS_IMAGE_TAG = SYNDESIS_PREFIX + "image.tag";
     private static final String SYNDESIS_IMAGE_TAG_ENV = SYNDESIS_ENV_PREFIX + "IMAGE_TAG";
 
+    private static final String SYNDESIS_DEBUG_PORT_DEFAULT = "5005";
     private static final String SYNDESIS_DEBUG_PORT = SYNDESIS_PREFIX + "debug.port";
     private static final String SYNDESIS_DEBUG_PORT_ENV = SYNDESIS_ENV_PREFIX + "DEBUG_PORT";
 
@@ -47,11 +50,11 @@ public final class SyndesisTestEnvironment {
             syndesisVersion = versionProperties.get("syndesis.version").toString();
 
             if (syndesisVersion.equals("${syndesis.version}")) {
-                syndesisVersion = "1.7-SNAPSHOT";
+                syndesisVersion = SYNDESIS_VERSION_DEFAULT;
             }
         } catch (IOException e) {
             LOG.warn("Unable to read syndesis version information", e);
-            syndesisVersion = "1.7-SNAPSHOT";
+            syndesisVersion = SYNDESIS_VERSION_DEFAULT;
         }
     }
 
@@ -70,25 +73,30 @@ public final class SyndesisTestEnvironment {
         String projectVersion = getSyndesisVersion();
 
         if (projectVersion.endsWith("SNAPSHOT")) {
-            projectVersion = "latest";
+            projectVersion = SYNDESIS_IMAGE_TAG_DEFAULT;
         }
 
-        return System.getProperty(SYNDESIS_IMAGE_TAG, System.getenv(SYNDESIS_IMAGE_TAG_ENV) != null ? System.getenv(SYNDESIS_IMAGE_TAG_ENV) : projectVersion);
+        String imageTag = System.getProperty(SYNDESIS_IMAGE_TAG, System.getenv(SYNDESIS_IMAGE_TAG_ENV) != null ? System.getenv(SYNDESIS_IMAGE_TAG_ENV) : projectVersion);
+        if (imageTag.isEmpty()) {
+            imageTag = SYNDESIS_IMAGE_TAG_DEFAULT;
+        }
+
+        return imageTag;
     }
 
     public static int getDebugPort() {
-        return Integer.valueOf(System.getProperty(SYNDESIS_DEBUG_PORT, System.getenv(SYNDESIS_DEBUG_PORT_ENV) != null ? System.getenv(SYNDESIS_DEBUG_PORT_ENV) : "5005"));
+        return Integer.valueOf(System.getProperty(SYNDESIS_DEBUG_PORT, System.getenv(SYNDESIS_DEBUG_PORT_ENV) != null ? System.getenv(SYNDESIS_DEBUG_PORT_ENV) : SYNDESIS_DEBUG_PORT_DEFAULT));
     }
 
     public static boolean isLoggingEnabled() {
-        return Boolean.valueOf(System.getProperty(SYNDESIS_LOGGING_ENABLED, System.getenv(SYNDESIS_LOGGING_ENABLED_ENV) != null ? System.getenv(SYNDESIS_LOGGING_ENABLED_ENV) : "false"));
+        return Boolean.valueOf(System.getProperty(SYNDESIS_LOGGING_ENABLED, System.getenv(SYNDESIS_LOGGING_ENABLED_ENV) != null ? System.getenv(SYNDESIS_LOGGING_ENABLED_ENV) : Boolean.FALSE.toString()));
     }
 
     public static boolean isDebugEnabled() {
-        return Boolean.valueOf(System.getProperty(SYNDESIS_DEBUG_ENABLED, System.getenv(SYNDESIS_DEBUG_ENABLED_ENV) != null ? System.getenv(SYNDESIS_DEBUG_ENABLED_ENV) : "false"));
+        return Boolean.valueOf(System.getProperty(SYNDESIS_DEBUG_ENABLED, System.getenv(SYNDESIS_DEBUG_ENABLED_ENV) != null ? System.getenv(SYNDESIS_DEBUG_ENABLED_ENV) : Boolean.FALSE.toString()));
     }
 
     public static boolean isS2iBuildEnabled() {
-        return Boolean.parseBoolean(System.getProperty(S2I_BUILD_ENABLED, System.getenv(S2I_BUILD_ENABLED_ENV) != null ? System.getenv(S2I_BUILD_ENABLED_ENV) : "false"));
+        return Boolean.parseBoolean(System.getProperty(S2I_BUILD_ENABLED, System.getenv(S2I_BUILD_ENABLED_ENV) != null ? System.getenv(S2I_BUILD_ENABLED_ENV) : Boolean.FALSE.toString()));
     }
 }
