@@ -42,6 +42,7 @@ import org.testcontainers.images.builder.ImageFromDockerfile;
  */
 public class SyndesisIntegrationRuntimeContainer extends GenericContainer<SyndesisIntegrationRuntimeContainer> {
 
+    public static final int MANAGEMENT_PORT = 8081;
     public static final int SERVER_PORT = 8080;
     private String internalHostIp;
 
@@ -285,6 +286,10 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
 
     public int getServerPort() {
         return getMappedPort(SERVER_PORT);
+    }
+
+    public int getManagementPort() {
+        return getMappedPort(MANAGEMENT_PORT);
     }
 
     public String getInternalHostIp() {

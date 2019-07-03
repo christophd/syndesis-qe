@@ -31,6 +31,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 
@@ -60,7 +61,18 @@ public class WebHookToDB_IT extends SyndesisIntegrationTestSupport {
                             .fromExport(WebHookToDB_IT.class.getResourceAsStream("WebhookToDB-export.zip"))
                             .build()
                             .withNetwork(getSyndesisDb().getNetwork())
-                            .withExposedPorts(SyndesisIntegrationRuntimeContainer.SERVER_PORT);
+                            .withExposedPorts(SyndesisIntegrationRuntimeContainer.SERVER_PORT,
+                                              SyndesisIntegrationRuntimeContainer.MANAGEMENT_PORT);
+
+    @Test
+    @CitrusTest
+    public void testGetHealth(@CitrusResource TestRunner runner) {
+        runner.waitFor().http()
+                .method(HttpMethod.GET)
+                .seconds(60L)
+                .status(HttpStatus.OK)
+                .url(String.format("http://localhost:%s/health", integrationContainer.getManagementPort()));
+    }
 
     @Test
     @CitrusTest
@@ -118,7 +130,6 @@ public class WebHookToDB_IT extends SyndesisIntegrationTestSupport {
     }
 
     @Configuration
-    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     public static class EndpointConfig {
         @Bean
         public HttpClient webHookClient() {
