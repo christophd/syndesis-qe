@@ -32,6 +32,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
@@ -41,6 +42,8 @@ import org.springframework.test.context.ContextConfiguration;
  */
 @ContextConfiguration(classes = TodoApi_IT.EndpointConfig.class)
 public class TodoApi_IT extends SyndesisIntegrationTestSupport {
+
+    private static final String VND_OAI_OPENAPI_JSON = "application/vnd.oai.openapi+json";
 
     @Autowired
     private HttpClient todoListApiClient;
@@ -68,12 +71,22 @@ public class TodoApi_IT extends SyndesisIntegrationTestSupport {
 
     @Test
     @CitrusTest
-    public void testGetHealth(@CitrusResource TestRunner runner) {
+    public void testGetOpenApiSpec(@CitrusResource TestRunner runner) {
         runner.waitFor().http()
                 .method(HttpMethod.GET)
                 .seconds(60L)
                 .status(HttpStatus.OK)
                 .url(String.format("http://localhost:%s/health", integrationContainer.getManagementPort()));
+
+        runner.http(action -> action.client(todoListApiClient)
+                    .send()
+                    .get("/openapi.json"));
+
+        runner.http(builder -> builder.client(todoListApiClient)
+                .receive()
+                .response(HttpStatus.OK)
+                .contentType(VND_OAI_OPENAPI_JSON)
+                .payload(new ClassPathResource("todo-api.json", TodoApi_IT.class)));
     }
 
     @Test
