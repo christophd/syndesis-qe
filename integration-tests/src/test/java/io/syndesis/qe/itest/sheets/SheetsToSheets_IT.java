@@ -26,7 +26,6 @@ public class SheetsToSheets_IT extends GoogleSheetsTestSupport {
     public SyndesisIntegrationRuntimeContainer.Builder integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
             .name("named-columns")
             .fromExport(SheetsToSheets_IT.class.getResourceAsStream("SheetsToSheets-export.zip"))
-            .enableLogging()
             .customize("$..rootUrl.defaultValue",
                         String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, googleSheetsServerPort))
             .customize("$..configuredProperties.spreadsheetId", "testSheetId")

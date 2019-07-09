@@ -30,6 +30,10 @@ public final class SyndesisTestEnvironment {
     private static final String S2I_BUILD_ENABLED = SYNDESIS_PREFIX + "s2i.build.enabled";
     private static final String S2I_BUILD_ENABLED_ENV = SYNDESIS_ENV_PREFIX + "S2I_BUILD_ENABLED";
 
+    private static final String SYNDESIS_OUTPUT_DIRECTORY_DEFAULT = "target/integrations";
+    private static final String SYNDESIS_OUTPUT_DIRECTORY = SYNDESIS_PREFIX + "output.directory";
+    private static final String SYNDESIS_OUTPUT_DIRECTORY_ENV = SYNDESIS_ENV_PREFIX + "OUTPUT_DIRECTORY";
+
     /**
      * Prevent instantiation of utility class.
      */
@@ -58,6 +62,10 @@ public final class SyndesisTestEnvironment {
 
     public static int getDebugPort() {
         return Integer.valueOf(System.getProperty(SYNDESIS_DEBUG_PORT, System.getenv(SYNDESIS_DEBUG_PORT_ENV) != null ? System.getenv(SYNDESIS_DEBUG_PORT_ENV) : SYNDESIS_DEBUG_PORT_DEFAULT));
+    }
+
+    public static String getOutputDirectory() {
+        return System.getProperty(SYNDESIS_OUTPUT_DIRECTORY, System.getenv(SYNDESIS_OUTPUT_DIRECTORY_ENV) != null ? System.getenv(SYNDESIS_OUTPUT_DIRECTORY_ENV) : SYNDESIS_OUTPUT_DIRECTORY_DEFAULT);
     }
 
     public static boolean isLoggingEnabled() {

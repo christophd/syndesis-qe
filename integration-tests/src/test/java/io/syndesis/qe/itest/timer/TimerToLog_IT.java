@@ -12,7 +12,7 @@ import io.syndesis.common.model.integration.Step;
 import io.syndesis.common.model.integration.StepKind;
 import io.syndesis.qe.itest.SyndesisIntegrationTestSupport;
 import io.syndesis.qe.itest.containers.integration.SyndesisIntegrationRuntimeContainer;
-import io.syndesis.qe.itest.integration.supplier.JsonIntegrationSupplier;
+import io.syndesis.qe.itest.integration.source.JsonIntegrationSource;
 import org.junit.Test;
 import org.testcontainers.containers.wait.strategy.Wait;
 
@@ -80,7 +80,7 @@ public class TimerToLog_IT extends SyndesisIntegrationTestSupport {
     public void timeToLogJsonTest() {
         SyndesisIntegrationRuntimeContainer.Builder integrationContainerBuilder = new SyndesisIntegrationRuntimeContainer.Builder()
                 .name("timer-to-log-json")
-                .fromSupplier(new JsonIntegrationSupplier(TimerToLog_IT.class.getResource("TimerToLog.json")));
+                .fromSource(new JsonIntegrationSource(TimerToLog_IT.class.getResource("TimerToLog.json")));
 
         try (SyndesisIntegrationRuntimeContainer integrationContainer = integrationContainerBuilder.build()
                 .waitingFor(Wait.forLogMessage(".*\"message\":\"Hello Syndesis!\".*\\s", 1))) {

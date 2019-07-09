@@ -1,4 +1,4 @@
-package io.syndesis.qe.itest.containers.integration.project;
+package io.syndesis.qe.itest.integration.project;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,35 +20,38 @@ import io.syndesis.common.util.MavenProperties;
 import io.syndesis.integration.api.IntegrationResourceManager;
 import io.syndesis.integration.project.generator.ProjectGenerator;
 import io.syndesis.integration.project.generator.ProjectGeneratorConfiguration;
+import io.syndesis.qe.itest.SyndesisTestEnvironment;
 import io.syndesis.qe.itest.containers.integration.SyndesisIntegrationRuntimeContainer;
-import io.syndesis.qe.itest.integration.supplier.IntegrationSupplier;
+import io.syndesis.qe.itest.integration.source.IntegrationSource;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 
 /**
  * @author Christoph Deppisch
  */
-public class ProjectProvider implements IntegrationProjectProvider {
+public abstract class AbstractMavenProjectBuilder<T extends AbstractMavenProjectBuilder<T>> implements ProjectBuilder {
 
     private final String name;
     private final String syndesisVersion;
 
-    private Path tmpDir;
+    private Path outputDir;
     private ProjectGeneratorConfiguration projectGeneratorConfiguration = new ProjectGeneratorConfiguration();
     private MavenProperties mavenProperties = new MavenProperties();
 
-    public ProjectProvider(String name, String syndesisVersion) {
+    public AbstractMavenProjectBuilder(String name, String syndesisVersion) {
         this.name = name;
         this.syndesisVersion = syndesisVersion;
-        withTempDirectory("target/integrations");
+        withOutputDirectory(SyndesisTestEnvironment.getOutputDirectory());
     }
 
     @Override
-    public Path buildProject(IntegrationSupplier integrationSupplier) {
+    public Path build(IntegrationSource source) {
         try {
-            Path projectDir = Files.createTempDirectory(tmpDir, name);
-            ProjectGenerator projectGenerator = new ProjectGenerator(projectGeneratorConfiguration, new ProjectProvider.StaticIntegrationResourceManager(integrationSupplier), mavenProperties);
-            try (TarArchiveInputStream in = new TarArchiveInputStream(projectGenerator.generate(integrationSupplier.get(), System.out::println))) {
+            Path projectDir = Files.createTempDirectory(outputDir, name);
+            ProjectGenerator projectGenerator = new ProjectGenerator(projectGeneratorConfiguration,
+                    new StaticIntegrationResourceManager(source),
+                    mavenProperties);
+            try (TarArchiveInputStream in = new TarArchiveInputStream(projectGenerator.generate(source.get(), System.out::println))) {
                 ArchiveEntry archiveEntry;
                 while ((archiveEntry = in.getNextEntry()) != null) {
                     Path fileOrDirectory = projectDir.resolve(archiveEntry.getName());
@@ -63,27 +66,12 @@ public class ProjectProvider implements IntegrationProjectProvider {
                 }
             }
 
-            // overwrite the syndesis version in generated pom.xml as project export may use another version as required in test.
-            Path pomFile = projectDir.resolve("pom.xml");
-            if (Files.exists(pomFile)) {
-                List<String> pomLines = Files.readAllLines(pomFile, Charset.forName("utf-8"));
-                StringBuilder newPom = new StringBuilder();
-                for (String line : pomLines) {
-                    if (line.trim().startsWith("<syndesis.version>") && line.trim().endsWith("</syndesis.version>")) {
-                        newPom.append(line, 0, line.indexOf("<"))
-                                .append(String.format("<syndesis.version>%s</syndesis.version>", syndesisVersion))
-                                .append(line, line.lastIndexOf(">") + 1, line.length())
-                                .append(System.lineSeparator());
-                    } else {
-                        newPom.append(line).append(System.lineSeparator());
-                    }
-                }
-                Files.write(pomFile, newPom.toString().getBytes(Charset.forName("utf-8")));
-            }
+            customizePomFile(source, projectDir.resolve("pom.xml"));
+            customizeIntegrationFile(source, projectDir.resolve("src").resolve("main").resolve("resources").resolve("syndesis").resolve("integration").resolve("integration.json"));
 
             // auto add secrets to application properties
             Files.write(projectDir.resolve("src").resolve("main").resolve("resources").resolve("application.properties"),
-                    getApplicationProperties(integrationSupplier).getBytes(Charset.forName("utf-8")), StandardOpenOption.APPEND);
+                    getApplicationProperties(source).getBytes(Charset.forName("utf-8")), StandardOpenOption.APPEND);
 
             Files.write(projectDir.resolve("src").resolve("main").resolve("resources").resolve("application.properties"),
                     String.format("management.port=%s", SyndesisIntegrationRuntimeContainer.MANAGEMENT_PORT).getBytes(Charset.forName("utf-8")), StandardOpenOption.APPEND);
@@ -93,10 +81,37 @@ public class ProjectProvider implements IntegrationProjectProvider {
         }
     }
 
-    protected String getApplicationProperties(IntegrationSupplier integrationSupplier) {
+    protected void customizeIntegrationFile(IntegrationSource source, Path integrationFile) throws IOException {
+    }
+
+    protected void customizePomFile(IntegrationSource source, Path pomFile) throws IOException {
+        // overwrite the syndesis version in generated pom.xml as project export may use another version as required in test.
+        if (Files.exists(pomFile)) {
+            List<String> pomLines = Files.readAllLines(pomFile, Charset.forName("utf-8"));
+            StringBuilder newPom = new StringBuilder();
+            for (String line : pomLines) {
+                if (line.trim().startsWith("<syndesis.version>") && line.trim().endsWith("</syndesis.version>")) {
+                    newPom.append(line, 0, line.indexOf("<"))
+                            .append(String.format("<syndesis.version>%s</syndesis.version>", syndesisVersion))
+                            .append(line, line.lastIndexOf(">") + 1, line.length())
+                            .append(System.lineSeparator());
+                } else {
+                    newPom.append(line).append(System.lineSeparator());
+                }
+            }
+            Files.write(pomFile, newPom.toString().getBytes(Charset.forName("utf-8")));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private T self() {
+        return (T) this;
+    }
+
+    private String getApplicationProperties(IntegrationSource source) {
         try {
-            ProjectGenerator projectGenerator = new ProjectGenerator(projectGeneratorConfiguration, new ProjectProvider.StaticIntegrationResourceManager(integrationSupplier), mavenProperties);
-            Properties applicationProperties = projectGenerator.generateApplicationProperties(integrationSupplier.get());
+            ProjectGenerator projectGenerator = new ProjectGenerator(projectGeneratorConfiguration, new StaticIntegrationResourceManager(source), mavenProperties);
+            Properties applicationProperties = projectGenerator.generateApplicationProperties(source.get());
 
             StringWriter writer = new StringWriter();
             applicationProperties.store(writer, "Auto added integration test secrets");
@@ -107,20 +122,20 @@ public class ProjectProvider implements IntegrationProjectProvider {
         }
     }
 
-    public ProjectProvider withTempDirectory(String tmpDir) {
+    public ProjectBuilder withOutputDirectory(String tmpDir) {
         try {
-            this.tmpDir = Files.createDirectories(Paths.get(tmpDir));
+            this.outputDir = Files.createDirectories(Paths.get(tmpDir));
         } catch (IOException e) {
             throw new IllegalStateException("Failed to create temp directory", e);
         }
-        return this;
+        return self();
     }
 
-    private static class StaticIntegrationResourceManager implements IntegrationResourceManager {
-        private final IntegrationSupplier integrationSupplier;
+    static class StaticIntegrationResourceManager implements IntegrationResourceManager {
+        private final IntegrationSource source;
 
-        private StaticIntegrationResourceManager(IntegrationSupplier integrationSupplier) {
-            this.integrationSupplier = integrationSupplier;
+        StaticIntegrationResourceManager(IntegrationSource source) {
+            this.source = source;
         }
 
         @Override
@@ -145,7 +160,7 @@ public class ProjectProvider implements IntegrationProjectProvider {
 
         @Override
         public Optional<OpenApi> loadOpenApiDefinition(String id) {
-            return Optional.ofNullable(integrationSupplier.getOpenApis().get(":" + id));
+            return Optional.ofNullable(source.getOpenApis().get(":" + id));
         }
 
         @Override
@@ -154,7 +169,30 @@ public class ProjectProvider implements IntegrationProjectProvider {
         }
     }
 
+    /**
+     * Obtains the name.
+     *
+     * @return
+     */
     public String getName() {
         return name;
+    }
+
+    /**
+     * Obtains the projectGeneratorConfiguration.
+     *
+     * @return
+     */
+    public ProjectGeneratorConfiguration getProjectGeneratorConfiguration() {
+        return projectGeneratorConfiguration;
+    }
+
+    /**
+     * Obtains the mavenProperties.
+     *
+     * @return
+     */
+    public MavenProperties getMavenProperties() {
+        return mavenProperties;
     }
 }

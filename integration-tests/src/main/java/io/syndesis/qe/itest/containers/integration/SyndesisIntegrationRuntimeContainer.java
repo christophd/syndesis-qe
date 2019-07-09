@@ -14,15 +14,15 @@ import com.github.dockerjava.api.model.Ports;
 import io.syndesis.common.model.integration.Flow;
 import io.syndesis.common.model.integration.Integration;
 import io.syndesis.qe.itest.SyndesisTestEnvironment;
-import io.syndesis.qe.itest.containers.integration.project.IntegrationProjectProvider;
-import io.syndesis.qe.itest.containers.integration.project.ProjectProvider;
-import io.syndesis.qe.itest.containers.integration.project.S2iProjectProvider;
+import io.syndesis.qe.itest.containers.s2i.S2iProjectBuilder;
 import io.syndesis.qe.itest.integration.customizer.IntegrationCustomizer;
 import io.syndesis.qe.itest.integration.customizer.JsonPathIntegrationCustomizer;
-import io.syndesis.qe.itest.integration.supplier.CustomizerAwareIntegrationSupplier;
-import io.syndesis.qe.itest.integration.supplier.ExportIntegrationSupplier;
-import io.syndesis.qe.itest.integration.supplier.IntegrationSupplier;
-import io.syndesis.qe.itest.integration.supplier.JsonIntegrationSupplier;
+import io.syndesis.qe.itest.integration.project.ProjectBuilder;
+import io.syndesis.qe.itest.integration.project.SpringBootProjectBuilder;
+import io.syndesis.qe.itest.integration.source.CustomizedIntegrationSource;
+import io.syndesis.qe.itest.integration.source.IntegrationExportSource;
+import io.syndesis.qe.itest.integration.source.IntegrationSource;
+import io.syndesis.qe.itest.integration.source.JsonIntegrationSource;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
@@ -44,6 +44,8 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
 
     public static final int MANAGEMENT_PORT = 8081;
     public static final int SERVER_PORT = 8080;
+    private static final String S2I_RUN_SCRIPT = "/usr/local/s2i/run";
+
     private String internalHostIp;
 
     /**
@@ -112,7 +114,7 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
     private static String getS2iRunCommandLine(boolean debugEnabled) {
         StringJoiner commandLine = new StringJoiner(" ");
 
-        commandLine.add("/usr/local/s2i/run");
+        commandLine.add(S2I_RUN_SCRIPT);
 
         if (debugEnabled) {
             commandLine.add("--debug");
@@ -134,14 +136,14 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
         private boolean enableLogging = SyndesisTestEnvironment.isLoggingEnabled();
         private boolean enableDebug = SyndesisTestEnvironment.isDebugEnabled();
 
-        private IntegrationProjectProvider projectProvider;
-        private IntegrationSupplier integrationSupplier;
+        private ProjectBuilder projectBuilder;
+        private IntegrationSource integrationSource;
 
         private List<IntegrationCustomizer> customizers = new ArrayList<>();
 
         public SyndesisIntegrationRuntimeContainer build() {
-            CustomizerAwareIntegrationSupplier supplier = new CustomizerAwareIntegrationSupplier(integrationSupplier, customizers);
-            Path projectPath = getProjectProvider().buildProject(supplier);
+            CustomizedIntegrationSource source = new CustomizedIntegrationSource(integrationSource, customizers);
+            Path projectPath = getProjectBuilder().build(source);
 
             SyndesisIntegrationRuntimeContainer container;
             if (Files.isDirectory(projectPath)) {
@@ -184,23 +186,23 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
             return this;
         }
 
-        public Builder withProjectProvider(IntegrationProjectProvider provider) {
-            this.projectProvider = provider;
+        public Builder withProjectBuilder(ProjectBuilder builder) {
+            this.projectBuilder = builder;
             return this;
         }
 
         public Builder fromIntegration(Integration integration) {
-            this.integrationSupplier = () -> integration;
+            this.integrationSource = () -> integration;
             return this;
         }
 
-        public Builder fromSupplier(IntegrationSupplier supplier) {
-            integrationSupplier = supplier;
+        public Builder fromSource(IntegrationSource source) {
+            integrationSource = source;
             return this;
         }
 
         public Builder fromFlows(Flow ... integrationFlows) {
-            this.integrationSupplier = () -> new Integration.Builder()
+            this.integrationSource = () -> new Integration.Builder()
                     .id(this.name)
                     .name("Test Integration")
                     .description("This is a test integration!")
@@ -215,48 +217,46 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
         }
 
         public Builder fromJson(String json) {
-            integrationSupplier = new JsonIntegrationSupplier(json);
+            integrationSource = new JsonIntegrationSource(json);
             return this;
         }
 
         public Builder fromJson(Path pathToJson) {
-            integrationSupplier = new JsonIntegrationSupplier(pathToJson);
+            integrationSource = new JsonIntegrationSource(pathToJson);
             return this;
         }
 
         public Builder fromFatJar(Path pathToJar) {
-            this.integrationSupplier = () -> null;
-            this.projectProvider = (integration) -> pathToJar;
+            this.integrationSource = () -> null;
+            this.projectBuilder = (integration) -> pathToJar;
             return this;
         }
 
         public Builder fromProjectDir(Path pathToProject) {
-            this.integrationSupplier = () -> null;
-            this.projectProvider = (integration) -> pathToProject;
+            this.integrationSource = () -> null;
+            this.projectBuilder = (integration) -> pathToProject;
             return this;
         }
 
         public Builder fromExport(Path pathToExport) {
-            this.integrationSupplier = new ExportIntegrationSupplier(pathToExport);
+            this.integrationSource = new IntegrationExportSource(pathToExport);
             return this;
         }
 
         public Builder fromExport(InputStream export) {
-            this.integrationSupplier = new ExportIntegrationSupplier(export);
+            this.integrationSource = new IntegrationExportSource(export);
             return this;
         }
 
         public Builder customize(String expression, Object value) {
-            withIntegrationCustomizer(new JsonPathIntegrationCustomizer(expression, value));
-            return this;
+            return customize(new JsonPathIntegrationCustomizer(expression, value));
         }
 
         public Builder customize(String expression, String key, Object value) {
-            withIntegrationCustomizer(new JsonPathIntegrationCustomizer(expression, key, value));
-            return this;
+            return customize(new JsonPathIntegrationCustomizer(expression, key, value));
         }
 
-        public Builder withIntegrationCustomizer(IntegrationCustomizer customizer) {
+        public Builder customize(IntegrationCustomizer customizer) {
             this.customizers.add(customizer);
             return this;
         }
@@ -271,15 +271,16 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
             return this;
         }
 
-        private IntegrationProjectProvider getProjectProvider() {
-            if (projectProvider != null) {
-                return projectProvider;
+        private ProjectBuilder getProjectBuilder() {
+            if (projectBuilder != null) {
+                return projectBuilder;
             }
 
+            ProjectBuilder builder = new SpringBootProjectBuilder(name, syndesisVersion);
             if (SyndesisTestEnvironment.isS2iBuildEnabled()) {
-                return new S2iProjectProvider(name, syndesisVersion, imageTag);
+                return new S2iProjectBuilder(builder, imageTag);
             } else {
-                return new ProjectProvider(name, syndesisVersion);
+                return builder;
             }
         }
     }

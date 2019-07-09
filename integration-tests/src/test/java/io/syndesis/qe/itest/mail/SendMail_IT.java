@@ -75,7 +75,6 @@ public class SendMail_IT extends SyndesisIntegrationTestSupport {
                             .fromExport(SendMail_IT.class.getResourceAsStream("SendMail-export.zip"))
                             .customize("$..configuredProperties.host", GenericContainer.INTERNAL_HOST_HOSTNAME)
                             .customize("$..configuredProperties.port", mailServerPort)
-                            .enableLogging()
                             .build()
                             .withNetwork(getSyndesisDb().getNetwork())
                             .withExposedPorts(SyndesisIntegrationRuntimeContainer.SERVER_PORT);

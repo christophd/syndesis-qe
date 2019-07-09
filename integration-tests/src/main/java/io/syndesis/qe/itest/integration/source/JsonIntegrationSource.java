@@ -1,4 +1,4 @@
-package io.syndesis.qe.itest.integration.supplier;
+package io.syndesis.qe.itest.integration.source;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -14,15 +14,15 @@ import org.testcontainers.shaded.com.google.common.io.Files;
 /**
  * @author Christoph Deppisch
  */
-public class JsonIntegrationSupplier implements IntegrationSupplier {
+public class JsonIntegrationSource implements IntegrationSource {
 
     private final String json;
 
-    public JsonIntegrationSupplier(String json) {
+    public JsonIntegrationSource(String json) {
         this.json = json;
     }
 
-    public JsonIntegrationSupplier(Path pathToJson) {
+    public JsonIntegrationSource(Path pathToJson) {
         try {
             this.json = Files.toString(pathToJson.toFile(), Charset.forName("utf-8"));
         } catch (IOException e) {
@@ -30,7 +30,7 @@ public class JsonIntegrationSupplier implements IntegrationSupplier {
         }
     }
 
-    public JsonIntegrationSupplier(URL resource) {
+    public JsonIntegrationSource(URL resource) {
         try {
             this.json = Files.toString(Paths.get(resource.toURI()).toFile(), Charset.forName("utf-8"));
         } catch (IOException | URISyntaxException e) {

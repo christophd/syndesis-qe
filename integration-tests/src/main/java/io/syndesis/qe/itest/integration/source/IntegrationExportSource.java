@@ -1,4 +1,4 @@
-package io.syndesis.qe.itest.integration.supplier;
+package io.syndesis.qe.itest.integration.source;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,15 +18,15 @@ import io.syndesis.common.util.Json;
 /**
  * @author Christoph Deppisch
  */
-public class ExportIntegrationSupplier implements IntegrationSupplier {
+public class IntegrationExportSource implements IntegrationSource {
 
     private final JsonNode model;
 
-    public ExportIntegrationSupplier(InputStream export) {
+    public IntegrationExportSource(InputStream export) {
         this.model = readModel(export);
     }
 
-    public ExportIntegrationSupplier(Path pathToExport) {
+    public IntegrationExportSource(Path pathToExport) {
         try {
             this.model = readModel(Files.newInputStream(pathToExport));
         } catch (IOException e) {

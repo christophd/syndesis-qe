@@ -17,12 +17,14 @@ import org.testcontainers.images.builder.ImageFromDockerfile;
  *
  * @author Christoph Deppisch
  */
-public class SyndesisS2iContainer extends GenericContainer<SyndesisS2iContainer> {
+public class SyndesisS2iAssemblyContainer extends GenericContainer<SyndesisS2iAssemblyContainer> {
 
-    public SyndesisS2iContainer(String integrationName, Path projectDir, String imageTag) {
+    private static final String S2I_ASSEMBLE_SCRIPT = "/usr/local/s2i/assemble";
+
+    public SyndesisS2iAssemblyContainer(String integrationName, Path projectDir, String imageTag) {
         super(new ImageFromDockerfile(integrationName + "-s2i", true)
                 .withDockerfileFromBuilder(builder -> builder.from(String.format("syndesis/syndesis-s2i:%s", imageTag))
-                        .cmd("/usr/local/s2i/assemble")
+                        .cmd(S2I_ASSEMBLE_SCRIPT)
                         .build()));
 
         withFileSystemBind(projectDir.toAbsolutePath().toString(), "/tmp/src", BindMode.READ_WRITE);

@@ -17,6 +17,7 @@
     <syndesis.debug.enabled>false</syndesis.debug.enabled>
     <syndesis.debug.port>5005</syndesis.debug.port>
     <syndesis.s2i.build.enabled>false</syndesis.s2i.build.enabled>
+    <syndesis.output.directory>${build.directory}/integrations</syndesis.output.directory>
     <syndesis.image.tag/>
   </properties>
 
@@ -264,6 +265,7 @@
             <syndesis.debug.enabled>${syndesis.debug.enabled}</syndesis.debug.enabled>
             <syndesis.debug.port>${syndesis.debug.port}</syndesis.debug.port>
             <syndesis.s2i.build.enabled>${syndesis.s2i.build.enabled}</syndesis.s2i.build.enabled>
+            <syndesis.output.directory>${syndesis.output.directory}</syndesis.output.directory>
             <syndesis.image.tag>${syndesis.image.tag}</syndesis.image.tag>
           </systemProperties>
         </configuration>

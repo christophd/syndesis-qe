@@ -1,4 +1,4 @@
-package io.syndesis.qe.itest.integration.supplier;
+package io.syndesis.qe.itest.integration.source;
 
 import java.util.Collections;
 import java.util.Map;
@@ -11,7 +11,7 @@ import io.syndesis.common.model.openapi.OpenApi;
  * @author Christoph Deppisch
  */
 @FunctionalInterface
-public interface IntegrationSupplier extends Supplier<Integration> {
+public interface IntegrationSource extends Supplier<Integration> {
 
     default Map<String, OpenApi> getOpenApis() {
         return Collections.emptyMap();

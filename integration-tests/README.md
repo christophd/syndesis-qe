@@ -292,7 +292,7 @@ Last not least you can provide a Json model file representing the integration to
 @ClassRule
 public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
                 .name("timer-to-log-json")
-                .fromSupplier(new JsonIntegrationSupplier(TimerToLog_IT.class.getResource("TimerToLog.json")))
+                .fromSource(new JsonintegrationSource(TimerToLog_IT.class.getResource("TimerToLog.json")))
                 .build();
 ```
 

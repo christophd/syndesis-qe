@@ -1,4 +1,4 @@
-package io.syndesis.qe.itest.integration.supplier;
+package io.syndesis.qe.itest.integration.source;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.syndesis.common.model.action.ConnectorAction;
@@ -16,7 +16,7 @@ import org.junit.Test;
 /**
  * @author Christoph Deppisch
  */
-public class JsonIntegrationSupplierTest {
+public class JsonIntegrationSourceTest {
 
     @Test
     public void getFromJson() throws JsonProcessingException {
@@ -43,7 +43,7 @@ public class JsonIntegrationSupplierTest {
                     .build())
                 .build();
 
-        JsonIntegrationSupplier supplier = new JsonIntegrationSupplier(Json.writer().forType(Integration.class).writeValueAsString(sample));
-        Assert.assertEquals(sample, supplier.get());
+        JsonIntegrationSource source = new JsonIntegrationSource(Json.writer().forType(Integration.class).writeValueAsString(sample));
+        Assert.assertEquals(sample, source.get());
     }
 }

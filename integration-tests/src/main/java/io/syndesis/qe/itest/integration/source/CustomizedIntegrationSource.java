@@ -1,4 +1,4 @@
-package io.syndesis.qe.itest.integration.supplier;
+package io.syndesis.qe.itest.integration.source;
 
 import java.util.List;
 import java.util.Map;
@@ -10,12 +10,12 @@ import io.syndesis.qe.itest.integration.customizer.IntegrationCustomizer;
 /**
  * @author Christoph Deppisch
  */
-public class CustomizerAwareIntegrationSupplier implements IntegrationSupplier {
+public class CustomizedIntegrationSource implements IntegrationSource {
 
-    private final IntegrationSupplier delegate;
+    private final IntegrationSource delegate;
     private final List<IntegrationCustomizer> customizers;
 
-    public CustomizerAwareIntegrationSupplier(IntegrationSupplier delegate, List<IntegrationCustomizer> customizers) {
+    public CustomizedIntegrationSource(IntegrationSource delegate, List<IntegrationCustomizer> customizers) {
         this.delegate = delegate;
         this.customizers = customizers;
     }
