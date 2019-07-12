@@ -17,6 +17,7 @@ import com.consol.citrus.message.DefaultMessage;
 import com.consol.citrus.util.FileUtils;
 import com.consol.citrus.validation.json.JsonMessageValidationContext;
 import com.consol.citrus.validation.json.JsonTextMessageValidator;
+import io.syndesis.qe.itest.SyndesisTestEnvironment;
 import io.syndesis.qe.itest.containers.integration.SyndesisIntegrationRuntimeContainer;
 import org.apache.commons.net.ftp.FTPCmd;
 import org.apache.ftpserver.DataConnectionConfiguration;
@@ -55,7 +56,7 @@ public class WebHookToFtp_IT extends FtpTestSupport {
             .customize("$..configuredProperties.host", GenericContainer.INTERNAL_HOST_HOSTNAME)
             .customize("$..configuredProperties.port", ftpTestServerPort)
             .build()
-            .withExposedPorts(SyndesisIntegrationRuntimeContainer.SERVER_PORT);
+            .withExposedPorts(SyndesisTestEnvironment.getServerPort());
 
     @Test
     @CitrusTest

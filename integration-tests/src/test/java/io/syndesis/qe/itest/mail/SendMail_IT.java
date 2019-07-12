@@ -30,6 +30,7 @@ import com.consol.citrus.mail.message.MailMessage;
 import com.consol.citrus.mail.server.MailServer;
 import com.consol.citrus.util.FileUtils;
 import io.syndesis.qe.itest.SyndesisIntegrationTestSupport;
+import io.syndesis.qe.itest.SyndesisTestEnvironment;
 import io.syndesis.qe.itest.containers.integration.SyndesisIntegrationRuntimeContainer;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -77,7 +78,7 @@ public class SendMail_IT extends SyndesisIntegrationTestSupport {
                             .customize("$..configuredProperties.port", mailServerPort)
                             .build()
                             .withNetwork(getSyndesisDb().getNetwork())
-                            .withExposedPorts(SyndesisIntegrationRuntimeContainer.SERVER_PORT);
+                            .withExposedPorts(SyndesisTestEnvironment.getServerPort());
 
     @Test
     @CitrusTest

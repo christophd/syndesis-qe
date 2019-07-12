@@ -25,6 +25,7 @@ import com.consol.citrus.dsl.runner.TestRunner;
 import com.consol.citrus.dsl.runner.TestRunnerBeforeTestSupport;
 import com.consol.citrus.http.client.HttpClient;
 import io.syndesis.qe.itest.SyndesisIntegrationTestSupport;
+import io.syndesis.qe.itest.SyndesisTestEnvironment;
 import io.syndesis.qe.itest.containers.integration.SyndesisIntegrationRuntimeContainer;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -61,8 +62,8 @@ public class WebHookToDB_IT extends SyndesisIntegrationTestSupport {
                             .fromExport(WebHookToDB_IT.class.getResourceAsStream("WebhookToDB-export.zip"))
                             .build()
                             .withNetwork(getSyndesisDb().getNetwork())
-                            .withExposedPorts(SyndesisIntegrationRuntimeContainer.SERVER_PORT,
-                                              SyndesisIntegrationRuntimeContainer.MANAGEMENT_PORT);
+                            .withExposedPorts(SyndesisTestEnvironment.getServerPort(),
+                                              SyndesisTestEnvironment.getManagementPort());
 
     @Test
     @CitrusTest

@@ -6,6 +6,7 @@ import com.consol.citrus.dsl.endpoint.CitrusEndpoints;
 import com.consol.citrus.dsl.runner.TestRunner;
 import com.consol.citrus.http.server.HttpServer;
 import io.syndesis.qe.itest.SyndesisIntegrationTestSupport;
+import io.syndesis.qe.itest.SyndesisTestEnvironment;
 import io.syndesis.qe.itest.containers.integration.SyndesisIntegrationRuntimeContainer;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -47,8 +48,8 @@ public class HttpToHttp_IT extends SyndesisIntegrationTestSupport {
             .customize("$..configuredProperties.baseUrl",
                         String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, todoServerPort))
             .build()
-            .withExposedPorts(SyndesisIntegrationRuntimeContainer.SERVER_PORT,
-                              SyndesisIntegrationRuntimeContainer.MANAGEMENT_PORT);
+            .withExposedPorts(SyndesisTestEnvironment.getServerPort(),
+                              SyndesisTestEnvironment.getManagementPort());
 
     @Test
     @CitrusTest

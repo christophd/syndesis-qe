@@ -5,7 +5,9 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.StringJoiner;
 
 import com.github.dockerjava.api.model.ExposedPort;
@@ -18,11 +20,11 @@ import io.syndesis.qe.itest.containers.s2i.S2iProjectBuilder;
 import io.syndesis.qe.itest.integration.customizer.IntegrationCustomizer;
 import io.syndesis.qe.itest.integration.customizer.JsonPathIntegrationCustomizer;
 import io.syndesis.qe.itest.integration.project.ProjectBuilder;
-import io.syndesis.qe.itest.integration.project.SpringBootProjectBuilder;
 import io.syndesis.qe.itest.integration.source.CustomizedIntegrationSource;
 import io.syndesis.qe.itest.integration.source.IntegrationExportSource;
 import io.syndesis.qe.itest.integration.source.IntegrationSource;
 import io.syndesis.qe.itest.integration.source.JsonIntegrationSource;
+import io.syndesis.qe.itest.model.IntegrationRuntime;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
@@ -42,8 +44,6 @@ import org.testcontainers.images.builder.ImageFromDockerfile;
  */
 public class SyndesisIntegrationRuntimeContainer extends GenericContainer<SyndesisIntegrationRuntimeContainer> {
 
-    public static final int MANAGEMENT_PORT = 8081;
-    public static final int SERVER_PORT = 8080;
     private static final String S2I_RUN_SCRIPT = "/usr/local/s2i/run";
 
     private String internalHostIp;
@@ -54,14 +54,17 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
      * @param imageTag
      * @param integrationName
      * @param projectDir
+     * @param envProperties
+     * @param runCommand
      * @param deleteOnExit
-     * @param debugEnabled
      */
-    private SyndesisIntegrationRuntimeContainer(String imageTag, String integrationName, Path projectDir, boolean deleteOnExit, boolean debugEnabled) {
+    private SyndesisIntegrationRuntimeContainer(String imageTag, String integrationName, Path projectDir,
+                                                Map<String, String> envProperties, String runCommand, boolean deleteOnExit) {
         super(new ImageFromDockerfile(integrationName, deleteOnExit)
                 .withDockerfileFromBuilder(builder -> builder.from(String.format("syndesis/syndesis-s2i:%s", imageTag))
+                        .env(envProperties)
                         .expose(SyndesisTestEnvironment.getDebugPort())
-                        .cmd(getMavenCommandLine(debugEnabled))
+                        .cmd(runCommand)
                         .build()));
 
         withFileSystemBind(projectDir.toAbsolutePath().toString(), "/tmp/src", BindMode.READ_WRITE);
@@ -73,58 +76,22 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
      * @param imageTag
      * @param integrationName
      * @param projectJar
+     * @param envProperties
+     * @param runCommand
      * @param deleteOnExit
-     * @param debugEnabled
      */
-    private SyndesisIntegrationRuntimeContainer(String imageTag, String integrationName, File projectJar, boolean deleteOnExit, boolean debugEnabled) {
+    private SyndesisIntegrationRuntimeContainer(String imageTag, String integrationName, File projectJar,
+                                                Map<String, String> envProperties, String runCommand, boolean deleteOnExit) {
         super(new ImageFromDockerfile(integrationName, deleteOnExit)
                 .withDockerfileFromBuilder(builder -> builder.from(String.format("syndesis/syndesis-s2i:%s", imageTag))
                         .add("integration-runtime.jar", "/deployments/integration-runtime.jar")
-                        .env("JAVA_OPTIONS", getDebugAgentOption(debugEnabled))
+                        .env(envProperties)
                         .expose(SyndesisTestEnvironment.getDebugPort())
-                        .cmd(getS2iRunCommandLine(debugEnabled))
+                        .cmd(runCommand)
                         .build())
                         .withFileFromPath("integration-runtime.jar", projectJar.toPath().toAbsolutePath()));
 
         withCreateContainerCmdModifier(createContainerCmd -> createContainerCmd.withName(integrationName));
-    }
-
-    private static String getMavenCommandLine(boolean debugEnabled) {
-        StringJoiner commandLine = new StringJoiner(" ");
-
-        commandLine.add("mvn")
-                   .add("-s")
-                   .add("/tmp/src/configuration/settings.xml")
-                   .add("-f")
-                   .add("/tmp/src")
-                   .add("spring-boot:run")
-                   .add("-Dmaven.repo.local=/tmp/artifacts/m2");
-
-        if (debugEnabled) {
-            commandLine.add(getDebugJvmArguments(debugEnabled));
-        }
-
-        return commandLine.toString();
-    }
-
-    private static String getDebugJvmArguments(boolean debugEnabled) {
-        return debugEnabled ? String.format("-Drun.jvmArguments=\"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=%s\"", SyndesisTestEnvironment.getDebugPort()) : "";
-    }
-
-    private static String getS2iRunCommandLine(boolean debugEnabled) {
-        StringJoiner commandLine = new StringJoiner(" ");
-
-        commandLine.add(S2I_RUN_SCRIPT);
-
-        if (debugEnabled) {
-            commandLine.add("--debug");
-        }
-
-        return commandLine.toString();
-    }
-
-    private static String getDebugAgentOption(boolean debugEnabled) {
-        return debugEnabled ? String.format("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=%s", SyndesisTestEnvironment.getDebugPort()) : "";
     }
 
     public static class Builder {
@@ -148,10 +115,12 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
             SyndesisIntegrationRuntimeContainer container;
             if (Files.isDirectory(projectPath)) {
                 //Run directly from project source directory
-                container = new SyndesisIntegrationRuntimeContainer(imageTag, name, projectPath, deleteOnExit, enableDebug);
+                container = new SyndesisIntegrationRuntimeContainer(imageTag, name, projectPath, getEnvProperties(),
+                        getMavenCommandLine(), deleteOnExit);
             } else {
                 //Run project fat jar
-                container = new SyndesisIntegrationRuntimeContainer(imageTag, name, projectPath.toFile(), deleteOnExit, enableDebug);
+                container = new SyndesisIntegrationRuntimeContainer(imageTag, name, projectPath.toFile(), getEnvProperties(),
+                        getS2iRunCommandLine(), deleteOnExit);
             }
 
             if (enableLogging) {
@@ -160,7 +129,8 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
 
             if (enableDebug) {
                 container.withExposedPorts(SyndesisTestEnvironment.getDebugPort());
-                container.withCreateContainerCmdModifier(cmd -> cmd.withPortBindings(new PortBinding(Ports.Binding.bindPort(SyndesisTestEnvironment.getDebugPort()), new ExposedPort(SyndesisTestEnvironment.getDebugPort()))));
+                container.withCreateContainerCmdModifier(cmd -> cmd.withPortBindings(new PortBinding(Ports.Binding.bindPort(SyndesisTestEnvironment.getDebugPort()),
+                        new ExposedPort(SyndesisTestEnvironment.getDebugPort()))));
             }
 
             return container;
@@ -276,21 +246,76 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
                 return projectBuilder;
             }
 
-            ProjectBuilder builder = new SpringBootProjectBuilder(name, syndesisVersion);
+            ProjectBuilder builder = SyndesisTestEnvironment.getIntegrationRuntime().getProjectBuilder(name, syndesisVersion);
             if (SyndesisTestEnvironment.isS2iBuildEnabled()) {
                 return new S2iProjectBuilder(builder, imageTag);
             } else {
                 return builder;
             }
         }
+
+        private Map<String, String> getEnvProperties() {
+            Map<String, String> envProps = new HashMap<>();
+
+            envProps.put("SYNDESIS_VERSION", SyndesisTestEnvironment.getSyndesisVersion());
+
+            if (enableDebug) {
+                envProps.put("JAVA_OPTIONS", getDebugAgentOption());
+            }
+
+            if (SyndesisTestEnvironment.getIntegrationRuntime() == IntegrationRuntime.CAMEL_K) {
+                // enable camel-k customizers
+                envProps.put("CAMEL_K_CUSTOMIZERS", SyndesisTestEnvironment.getCamelkCustomizers());
+            }
+
+            return envProps;
+        }
+
+        private String getMavenCommandLine() {
+            StringJoiner commandLine = new StringJoiner(" ");
+
+            commandLine.add("mvn")
+                    .add("-s")
+                    .add("/tmp/src/configuration/settings.xml")
+                    .add("-f")
+                    .add("/tmp/src")
+                    .add(SyndesisTestEnvironment.getIntegrationRuntime().getCommand())
+                    .add("-Dmaven.repo.local=/tmp/artifacts/m2");
+
+            if (enableDebug) {
+                commandLine.add(getDebugJvmArguments());
+            }
+
+            return commandLine.toString();
+        }
+
+        private String getS2iRunCommandLine() {
+            StringJoiner commandLine = new StringJoiner(" ");
+
+            commandLine.add(S2I_RUN_SCRIPT);
+
+            if (enableDebug) {
+                commandLine.add("--debug");
+            }
+
+            return commandLine.toString();
+        }
+
+        private static String getDebugAgentOption() {
+            return String.format("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=%s", SyndesisTestEnvironment.getDebugPort());
+        }
+
+        private static String getDebugJvmArguments() {
+            return String.format("-Drun.jvmArguments=\"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=%s\"", SyndesisTestEnvironment.getDebugPort());
+        }
     }
 
     public int getServerPort() {
-        return getMappedPort(SERVER_PORT);
+        return getMappedPort(SyndesisTestEnvironment.getServerPort());
     }
 
     public int getManagementPort() {
-        return getMappedPort(MANAGEMENT_PORT);
+        return getMappedPort(SyndesisTestEnvironment.getManagementPort());
     }
 
     public String getInternalHostIp() {

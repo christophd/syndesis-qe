@@ -21,7 +21,6 @@ import io.syndesis.integration.api.IntegrationResourceManager;
 import io.syndesis.integration.project.generator.ProjectGenerator;
 import io.syndesis.integration.project.generator.ProjectGeneratorConfiguration;
 import io.syndesis.qe.itest.SyndesisTestEnvironment;
-import io.syndesis.qe.itest.containers.integration.SyndesisIntegrationRuntimeContainer;
 import io.syndesis.qe.itest.integration.source.IntegrationSource;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -74,7 +73,7 @@ public abstract class AbstractMavenProjectBuilder<T extends AbstractMavenProject
                     getApplicationProperties(source).getBytes(Charset.forName("utf-8")), StandardOpenOption.APPEND);
 
             Files.write(projectDir.resolve("src").resolve("main").resolve("resources").resolve("application.properties"),
-                    String.format("management.port=%s", SyndesisIntegrationRuntimeContainer.MANAGEMENT_PORT).getBytes(Charset.forName("utf-8")), StandardOpenOption.APPEND);
+                    String.format("management.port=%s", SyndesisTestEnvironment.getManagementPort()).getBytes(Charset.forName("utf-8")), StandardOpenOption.APPEND);
             return projectDir;
         } catch (IOException e) {
             throw new IllegalStateException("Failed to create integration project", e);

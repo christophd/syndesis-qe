@@ -10,6 +10,7 @@ import com.consol.citrus.dsl.runner.TestRunner;
 import com.consol.citrus.dsl.runner.TestRunnerBeforeTestSupport;
 import com.consol.citrus.http.server.HttpServer;
 import io.syndesis.qe.itest.SyndesisIntegrationTestSupport;
+import io.syndesis.qe.itest.SyndesisTestEnvironment;
 import io.syndesis.qe.itest.containers.integration.SyndesisIntegrationRuntimeContainer;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -53,7 +54,7 @@ public class DBToHttp_IT extends SyndesisIntegrationTestSupport {
                     String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, httpTestServerPort))
             .build()
             .withNetwork(getSyndesisDb().getNetwork())
-            .withExposedPorts(SyndesisIntegrationRuntimeContainer.MANAGEMENT_PORT);
+            .withExposedPorts(SyndesisTestEnvironment.getManagementPort());
 
     @Test
     @CitrusTest
