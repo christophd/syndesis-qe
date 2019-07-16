@@ -70,7 +70,7 @@ public class WebHookToDB_IT extends SyndesisIntegrationTestSupport {
     public void testGetHealth(@CitrusResource TestRunner runner) {
         runner.waitFor().http()
                 .method(HttpMethod.GET)
-                .seconds(60L)
+                .seconds(10L)
                 .status(HttpStatus.OK)
                 .url(String.format("http://localhost:%s/health", integrationContainer.getManagementPort()));
     }

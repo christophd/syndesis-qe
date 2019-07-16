@@ -1,6 +1,7 @@
 package io.syndesis.qe.itest;
 
 import io.syndesis.qe.itest.model.IntegrationRuntime;
+import org.springframework.util.StringUtils;
 
 /**
  * @author Christoph Deppisch
@@ -19,17 +20,21 @@ public final class SyndesisTestEnvironment {
     private static final String SYNDESIS_INTEGRATION_RUNTIME = SYNDESIS_PREFIX + "integration.runtime";
     private static final String SYNDESIS_INTEGRATION_RUNTIME_ENV = SYNDESIS_ENV_PREFIX + "INTEGRATION_RUNTIME";
 
-    private static final String SYNDESIS_CAMEL_K_CUSTOMIZERS_DEFAULT = "servlet,servletregistration,health,logging,syndesis";
+    private static final String SYNDESIS_CAMEL_K_CUSTOMIZERS_DEFAULT = "health,logging,syndesis";
     private static final String SYNDESIS_CAMEL_K_CUSTOMIZERS = SYNDESIS_PREFIX + "camel.k.customizers";
     private static final String SYNDESIS_CAMEL_K_CUSTOMIZERS_ENV = SYNDESIS_ENV_PREFIX + "CAMEL_K_CUSTOMIZERS";
 
     private static final String SYNDESIS_SERVER_PORT_DEFAULT = "8080";
     private static final String SYNDESIS_SERVER_PORT = SYNDESIS_PREFIX + "server.port";
-    private static final String SYNDESIS_SERVER_PORT_ENV = SYNDESIS_ENV_PREFIX + "SERVER.PORT";
+    private static final String SYNDESIS_SERVER_PORT_ENV = SYNDESIS_ENV_PREFIX + "SERVER_PORT";
 
     private static final String SYNDESIS_MANAGEMENT_PORT_DEFAULT = "8081";
     private static final String SYNDESIS_MANAGEMENT_PORT = SYNDESIS_PREFIX + "management.port";
-    private static final String SYNDESIS_MANAGEMENT_PORT_ENV = SYNDESIS_ENV_PREFIX + "MANAGEMENT.PORT";
+    private static final String SYNDESIS_MANAGEMENT_PORT_ENV = SYNDESIS_ENV_PREFIX + "MANAGEMENT_PORT";
+
+    private static final String SYNDESIS_CONTAINER_STARTUP_TIMEOUT_DEFAULT = "120";
+    private static final String SYNDESIS_CONTAINER_STARTUP_TIMEOUT = SYNDESIS_PREFIX + "container.startup.timeout";
+    private static final String SYNDESIS_CONTAINER_STARTUP_TIMEOUT_ENV = SYNDESIS_ENV_PREFIX + "CONTAINER_STARTUP_TIMEOUT";
 
     private static final String SYNDESIS_IMAGE_TAG_DEFAULT = "latest";
     private static final String SYNDESIS_IMAGE_TAG = SYNDESIS_PREFIX + "image.tag";
@@ -60,7 +65,8 @@ public final class SyndesisTestEnvironment {
     }
 
     public static String getSyndesisVersion() {
-        return System.getProperty(SYNDESIS_VERSION, System.getenv(SYNDESIS_VERSION_ENV) != null ? System.getenv(SYNDESIS_VERSION_ENV) : SYNDESIS_VERSION_DEFAULT);
+        return System.getProperty(SYNDESIS_VERSION, System.getenv(SYNDESIS_VERSION_ENV) != null ?
+                System.getenv(SYNDESIS_VERSION_ENV) : SYNDESIS_VERSION_DEFAULT);
     }
 
     public static String getSyndesisImageTag() {
@@ -70,7 +76,8 @@ public final class SyndesisTestEnvironment {
             projectVersion = SYNDESIS_IMAGE_TAG_DEFAULT;
         }
 
-        String imageTag = System.getProperty(SYNDESIS_IMAGE_TAG, System.getenv(SYNDESIS_IMAGE_TAG_ENV) != null ? System.getenv(SYNDESIS_IMAGE_TAG_ENV) : projectVersion);
+        String imageTag = System.getProperty(SYNDESIS_IMAGE_TAG, System.getenv(SYNDESIS_IMAGE_TAG_ENV) != null ?
+                System.getenv(SYNDESIS_IMAGE_TAG_ENV) : projectVersion);
         if (imageTag.isEmpty()) {
             imageTag = SYNDESIS_IMAGE_TAG_DEFAULT;
         }
@@ -79,42 +86,56 @@ public final class SyndesisTestEnvironment {
     }
 
     public static int getServerPort() {
-        return Integer.valueOf(System.getProperty(SYNDESIS_SERVER_PORT, System.getenv(SYNDESIS_SERVER_PORT_ENV) != null ? System.getenv(SYNDESIS_SERVER_PORT_ENV) : SYNDESIS_SERVER_PORT_DEFAULT));
+        return Integer.valueOf(System.getProperty(SYNDESIS_SERVER_PORT, System.getenv(SYNDESIS_SERVER_PORT_ENV) != null ?
+                System.getenv(SYNDESIS_SERVER_PORT_ENV) : SYNDESIS_SERVER_PORT_DEFAULT));
     }
 
     public static int getManagementPort() {
         if (getIntegrationRuntime() == IntegrationRuntime.CAMEL_K) {
             return getServerPort();
         } else {
-            return Integer.valueOf(System.getProperty(SYNDESIS_MANAGEMENT_PORT, System.getenv(SYNDESIS_MANAGEMENT_PORT_ENV) != null ? System.getenv(SYNDESIS_MANAGEMENT_PORT_ENV) : SYNDESIS_MANAGEMENT_PORT_DEFAULT));
+            return Integer.valueOf(System.getProperty(SYNDESIS_MANAGEMENT_PORT, System.getenv(SYNDESIS_MANAGEMENT_PORT_ENV) != null ?
+                    System.getenv(SYNDESIS_MANAGEMENT_PORT_ENV) : SYNDESIS_MANAGEMENT_PORT_DEFAULT));
         }
     }
 
     public static int getDebugPort() {
-        return Integer.valueOf(System.getProperty(SYNDESIS_DEBUG_PORT, System.getenv(SYNDESIS_DEBUG_PORT_ENV) != null ? System.getenv(SYNDESIS_DEBUG_PORT_ENV) : SYNDESIS_DEBUG_PORT_DEFAULT));
+        return Integer.valueOf(System.getProperty(SYNDESIS_DEBUG_PORT, System.getenv(SYNDESIS_DEBUG_PORT_ENV) != null ?
+                System.getenv(SYNDESIS_DEBUG_PORT_ENV) : SYNDESIS_DEBUG_PORT_DEFAULT));
+    }
+
+    public static int getContainerStartupTimeout() {
+        return Integer.valueOf(System.getProperty(SYNDESIS_CONTAINER_STARTUP_TIMEOUT, System.getenv(SYNDESIS_CONTAINER_STARTUP_TIMEOUT_ENV) != null ?
+                System.getenv(SYNDESIS_CONTAINER_STARTUP_TIMEOUT_ENV) : SYNDESIS_CONTAINER_STARTUP_TIMEOUT_DEFAULT));
     }
 
     public static String getOutputDirectory() {
-        return System.getProperty(SYNDESIS_OUTPUT_DIRECTORY, System.getenv(SYNDESIS_OUTPUT_DIRECTORY_ENV) != null ? System.getenv(SYNDESIS_OUTPUT_DIRECTORY_ENV) : SYNDESIS_OUTPUT_DIRECTORY_DEFAULT);
+        return System.getProperty(SYNDESIS_OUTPUT_DIRECTORY, System.getenv(SYNDESIS_OUTPUT_DIRECTORY_ENV) != null ?
+                System.getenv(SYNDESIS_OUTPUT_DIRECTORY_ENV) : SYNDESIS_OUTPUT_DIRECTORY_DEFAULT);
     }
 
     public static boolean isLoggingEnabled() {
-        return Boolean.valueOf(System.getProperty(SYNDESIS_LOGGING_ENABLED, System.getenv(SYNDESIS_LOGGING_ENABLED_ENV) != null ? System.getenv(SYNDESIS_LOGGING_ENABLED_ENV) : Boolean.FALSE.toString()));
+        return Boolean.valueOf(System.getProperty(SYNDESIS_LOGGING_ENABLED, System.getenv(SYNDESIS_LOGGING_ENABLED_ENV) != null ?
+                System.getenv(SYNDESIS_LOGGING_ENABLED_ENV) : Boolean.FALSE.toString()));
     }
 
     public static boolean isDebugEnabled() {
-        return Boolean.valueOf(System.getProperty(SYNDESIS_DEBUG_ENABLED, System.getenv(SYNDESIS_DEBUG_ENABLED_ENV) != null ? System.getenv(SYNDESIS_DEBUG_ENABLED_ENV) : Boolean.FALSE.toString()));
+        return Boolean.valueOf(System.getProperty(SYNDESIS_DEBUG_ENABLED, System.getenv(SYNDESIS_DEBUG_ENABLED_ENV) != null ?
+                System.getenv(SYNDESIS_DEBUG_ENABLED_ENV) : Boolean.FALSE.toString()));
     }
 
     public static boolean isS2iBuildEnabled() {
-        return Boolean.parseBoolean(System.getProperty(S2I_BUILD_ENABLED, System.getenv(S2I_BUILD_ENABLED_ENV) != null ? System.getenv(S2I_BUILD_ENABLED_ENV) : Boolean.FALSE.toString()));
+        return Boolean.parseBoolean(System.getProperty(S2I_BUILD_ENABLED, System.getenv(S2I_BUILD_ENABLED_ENV) != null ?
+                System.getenv(S2I_BUILD_ENABLED_ENV) : Boolean.FALSE.toString()));
     }
 
     public static IntegrationRuntime getIntegrationRuntime() {
-        return IntegrationRuntime.fromId(System.getProperty(SYNDESIS_INTEGRATION_RUNTIME, System.getenv(SYNDESIS_INTEGRATION_RUNTIME_ENV) != null ? System.getenv(SYNDESIS_INTEGRATION_RUNTIME_ENV) : SYNDESIS_INTEGRATION_RUNTIME_DEFAULT));
+        return IntegrationRuntime.fromId(System.getProperty(SYNDESIS_INTEGRATION_RUNTIME, System.getenv(SYNDESIS_INTEGRATION_RUNTIME_ENV) != null ?
+                System.getenv(SYNDESIS_INTEGRATION_RUNTIME_ENV) : SYNDESIS_INTEGRATION_RUNTIME_DEFAULT));
     }
 
-    public static String getCamelkCustomizers() {
-        return System.getProperty(SYNDESIS_CAMEL_K_CUSTOMIZERS, System.getenv(SYNDESIS_CAMEL_K_CUSTOMIZERS_ENV) != null ? System.getenv(SYNDESIS_CAMEL_K_CUSTOMIZERS_ENV) : SYNDESIS_CAMEL_K_CUSTOMIZERS_DEFAULT);
+    public static String[] getCamelkCustomizers() {
+        return StringUtils.commaDelimitedListToStringArray(System.getProperty(SYNDESIS_CAMEL_K_CUSTOMIZERS,
+                System.getenv(SYNDESIS_CAMEL_K_CUSTOMIZERS_ENV) != null ? System.getenv(SYNDESIS_CAMEL_K_CUSTOMIZERS_ENV) : SYNDESIS_CAMEL_K_CUSTOMIZERS_DEFAULT));
     }
 }

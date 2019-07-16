@@ -18,8 +18,8 @@
     <exec-maven-plugin.version>1.6.0</exec-maven-plugin.version>
     <log4j2.version>2.11.2</log4j2.version>
     <validation-api.version>2.0.1.Final</validation-api.version>
-    <camel.version>2.21.0.fuse-740038</camel.version>
-    <camel-k-runtime.version>0.3.4.fuse-740008</camel-k-runtime.version>
+    <camel.version>@camel.version@</camel.version>
+    <camel-k-runtime.version>@camel-k-runtime.version@</camel-k-runtime.version>
     <syndesis.version>@syndesis.version@</syndesis.version>
   </properties>
   {{^mavenRepositories.empty}}
@@ -61,23 +61,27 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+
+      <dependency>
+        <groupId>org.apache.camel.k</groupId>
+        <artifactId>camel-k-runtime-jvm</artifactId>
+        <version>${camel-k-runtime.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.camel.k</groupId>
+        <artifactId>camel-k-runtime-servlet</artifactId>
+        <version>${camel-k-runtime.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.camel.k</groupId>
+        <artifactId>camel-k-runtime-health</artifactId>
+        <version>${camel-k-runtime.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
   <dependencies>
-    <!-- camel -->
-    <dependency>
-      <groupId>org.apache.camel</groupId>
-      <artifactId>camel-servlet</artifactId>
-      <version>${camel.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.camel</groupId>
-      <artifactId>camel-mustache</artifactId>
-      <version>${camel.version}</version>
-    </dependency>
-
-      <!-- atlasmap runtime -->
+    <!-- atlasmap runtime -->
     <dependency>
       <groupId>io.atlasmap</groupId>
       <artifactId>camel-atlasmap</artifactId>
@@ -96,26 +100,15 @@
       <groupId>io.syndesis.integration</groupId>
       <artifactId>integration-runtime</artifactId>
     </dependency>
-    <dependency>
-      <groupId>io.syndesis.integration</groupId>
-      <artifactId>integration-runtime-camelk</artifactId>
-    </dependency>
 
     <!-- camel-k as runtime -->
     <dependency>
       <groupId>org.apache.camel.k</groupId>
       <artifactId>camel-k-runtime-jvm</artifactId>
-      <version>${camel-k-runtime.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.camel.k</groupId>
-      <artifactId>camel-k-runtime-servlet</artifactId>
-      <version>${camel-k-runtime.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.camel.k</groupId>
       <artifactId>camel-k-runtime-health</artifactId>
-      <version>${camel-k-runtime.version}</version>
     </dependency>
 
     <dependency>

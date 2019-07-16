@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,7 +25,6 @@ import io.syndesis.qe.itest.integration.source.CustomizedIntegrationSource;
 import io.syndesis.qe.itest.integration.source.IntegrationExportSource;
 import io.syndesis.qe.itest.integration.source.IntegrationSource;
 import io.syndesis.qe.itest.integration.source.JsonIntegrationSource;
-import io.syndesis.qe.itest.model.IntegrationRuntime;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
@@ -103,6 +103,8 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
         private boolean enableLogging = SyndesisTestEnvironment.isLoggingEnabled();
         private boolean enableDebug = SyndesisTestEnvironment.isDebugEnabled();
 
+        private Duration startupTimeout = Duration.ofSeconds(SyndesisTestEnvironment.getContainerStartupTimeout());
+
         private ProjectBuilder projectBuilder;
         private IntegrationSource integrationSource;
 
@@ -132,6 +134,8 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
                 container.withCreateContainerCmdModifier(cmd -> cmd.withPortBindings(new PortBinding(Ports.Binding.bindPort(SyndesisTestEnvironment.getDebugPort()),
                         new ExposedPort(SyndesisTestEnvironment.getDebugPort()))));
             }
+
+            container.waitingFor(SyndesisTestEnvironment.getIntegrationRuntime().getReadinessProbe().withStartupTimeout(startupTimeout));
 
             return container;
         }
@@ -241,6 +245,11 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
             return this;
         }
 
+        public Builder startupTimeout(Duration startupTimeout) {
+            this.startupTimeout = startupTimeout;
+            return this;
+        }
+
         private ProjectBuilder getProjectBuilder() {
             if (projectBuilder != null) {
                 return projectBuilder;
@@ -261,11 +270,6 @@ public class SyndesisIntegrationRuntimeContainer extends GenericContainer<Syndes
 
             if (enableDebug) {
                 envProps.put("JAVA_OPTIONS", getDebugAgentOption());
-            }
-
-            if (SyndesisTestEnvironment.getIntegrationRuntime() == IntegrationRuntime.CAMEL_K) {
-                // enable camel-k customizers
-                envProps.put("CAMEL_K_CUSTOMIZERS", SyndesisTestEnvironment.getCamelkCustomizers());
             }
 
             return envProps;

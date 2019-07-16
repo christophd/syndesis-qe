@@ -1,18 +1,21 @@
 package io.syndesis.qe.itest.sheets;
 
 import javax.sql.DataSource;
+import java.time.Duration;
 import java.util.Arrays;
 
 import com.consol.citrus.annotations.CitrusResource;
 import com.consol.citrus.annotations.CitrusTest;
 import com.consol.citrus.dsl.runner.TestRunner;
 import com.consol.citrus.http.server.HttpServer;
+import io.syndesis.qe.itest.SyndesisTestEnvironment;
 import io.syndesis.qe.itest.containers.integration.SyndesisIntegrationRuntimeContainer;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 /**
  * @author Christoph Deppisch
@@ -33,10 +36,12 @@ public class DBToSheets_IT extends GoogleSheetsTestSupport {
     public static SyndesisIntegrationRuntimeContainer integrationContainer = new SyndesisIntegrationRuntimeContainer.Builder()
             .name("db-to-sheets")
             .fromExport(DBToSheets_IT.class.getResourceAsStream("DBToSheets-export.zip"))
+            .customize("$..configuredProperties.schedulerExpression", "5000")
             .customize("$..rootUrl.defaultValue",
                         String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, googleSheetsServerPort))
             .build()
-            .withNetwork(getSyndesisDb().getNetwork());
+            .withNetwork(getSyndesisDb().getNetwork())
+            .waitingFor(Wait.defaultWaitStrategy().withStartupTimeout(Duration.ofSeconds(SyndesisTestEnvironment.getContainerStartupTimeout())));
 
     @Test
     @CitrusTest

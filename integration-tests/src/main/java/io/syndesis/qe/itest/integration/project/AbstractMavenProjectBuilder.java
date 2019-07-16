@@ -68,12 +68,9 @@ public abstract class AbstractMavenProjectBuilder<T extends AbstractMavenProject
             customizePomFile(source, projectDir.resolve("pom.xml"));
             customizeIntegrationFile(source, projectDir.resolve("src").resolve("main").resolve("resources").resolve("syndesis").resolve("integration").resolve("integration.json"));
 
-            // auto add secrets to application properties
+            // auto add secrets and other integration test settings to application properties
             Files.write(projectDir.resolve("src").resolve("main").resolve("resources").resolve("application.properties"),
                     getApplicationProperties(source).getBytes(Charset.forName("utf-8")), StandardOpenOption.APPEND);
-
-            Files.write(projectDir.resolve("src").resolve("main").resolve("resources").resolve("application.properties"),
-                    String.format("management.port=%s", SyndesisTestEnvironment.getManagementPort()).getBytes(Charset.forName("utf-8")), StandardOpenOption.APPEND);
             return projectDir;
         } catch (IOException e) {
             throw new IllegalStateException("Failed to create integration project", e);
@@ -89,17 +86,20 @@ public abstract class AbstractMavenProjectBuilder<T extends AbstractMavenProject
             List<String> pomLines = Files.readAllLines(pomFile, Charset.forName("utf-8"));
             StringBuilder newPom = new StringBuilder();
             for (String line : pomLines) {
-                if (line.trim().startsWith("<syndesis.version>") && line.trim().endsWith("</syndesis.version>")) {
-                    newPom.append(line, 0, line.indexOf("<"))
-                            .append(String.format("<syndesis.version>%s</syndesis.version>", syndesisVersion))
-                            .append(line, line.lastIndexOf(">") + 1, line.length())
-                            .append(System.lineSeparator());
-                } else {
-                    newPom.append(line).append(System.lineSeparator());
-                }
+                newPom.append(customizePomLine(line)).append(System.lineSeparator());
             }
             Files.write(pomFile, newPom.toString().getBytes(Charset.forName("utf-8")));
         }
+    }
+
+    protected String customizePomLine(String line) {
+        if (line.trim().startsWith("<syndesis.version>") && line.trim().endsWith("</syndesis.version>")) {
+            return line.substring(0, line.indexOf("<")) +
+                    String.format("<syndesis.version>%s</syndesis.version>", syndesisVersion) +
+                    line.substring(line.lastIndexOf(">") + 1);
+        }
+
+        return line;
     }
 
     @SuppressWarnings("unchecked")
@@ -107,18 +107,19 @@ public abstract class AbstractMavenProjectBuilder<T extends AbstractMavenProject
         return (T) this;
     }
 
-    private String getApplicationProperties(IntegrationSource source) {
-        try {
-            ProjectGenerator projectGenerator = new ProjectGenerator(projectGeneratorConfiguration, new StaticIntegrationResourceManager(source), mavenProperties);
-            Properties applicationProperties = projectGenerator.generateApplicationProperties(source.get());
+    private String getApplicationProperties(IntegrationSource source) throws IOException {
+        ProjectGenerator projectGenerator = new ProjectGenerator(projectGeneratorConfiguration, new StaticIntegrationResourceManager(source), mavenProperties);
+        Properties applicationProperties = customizeApplicationProperties(projectGenerator.generateApplicationProperties(source.get()));
 
-            StringWriter writer = new StringWriter();
-            applicationProperties.store(writer, "Auto added integration test secrets");
+        StringWriter writer = new StringWriter();
+        applicationProperties.store(writer, "Auto added integration test properties");
 
-            return writer.toString();
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to create application properties", e);
-        }
+        return writer.toString();
+    }
+
+    protected Properties customizeApplicationProperties(Properties applicationProperties) {
+        applicationProperties.put("management.port", String.valueOf(SyndesisTestEnvironment.getManagementPort()));
+        return applicationProperties;
     }
 
     public ProjectBuilder withOutputDirectory(String tmpDir) {

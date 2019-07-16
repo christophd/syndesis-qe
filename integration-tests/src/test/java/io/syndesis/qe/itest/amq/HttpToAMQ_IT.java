@@ -1,6 +1,7 @@
 package io.syndesis.qe.itest.amq;
 
 import javax.jms.ConnectionFactory;
+import java.time.Duration;
 
 import com.consol.citrus.annotations.CitrusResource;
 import com.consol.citrus.annotations.CitrusTest;
@@ -9,6 +10,7 @@ import com.consol.citrus.dsl.runner.TestRunner;
 import com.consol.citrus.http.server.HttpServer;
 import com.consol.citrus.jms.endpoint.JmsEndpoint;
 import io.syndesis.qe.itest.SyndesisIntegrationTestSupport;
+import io.syndesis.qe.itest.SyndesisTestEnvironment;
 import io.syndesis.qe.itest.containers.amq.JBossAMQBrokerContainer;
 import io.syndesis.qe.itest.containers.integration.SyndesisIntegrationRuntimeContainer;
 import org.apache.activemq.ActiveMQConnectionFactory;
@@ -22,6 +24,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.SocketUtils;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 /**
  * @author Christoph Deppisch
@@ -55,7 +58,8 @@ public class HttpToAMQ_IT extends SyndesisIntegrationTestSupport {
             .customize("$..configuredProperties.baseUrl",
                         String.format("http://%s:%s", GenericContainer.INTERNAL_HOST_HOSTNAME, todoServerPort))
             .build()
-            .withNetwork(amqBrokerContainer.getNetwork());
+            .withNetwork(amqBrokerContainer.getNetwork())
+            .waitingFor(Wait.defaultWaitStrategy().withStartupTimeout(Duration.ofSeconds(SyndesisTestEnvironment.getContainerStartupTimeout())));
 
     @Test
     @CitrusTest

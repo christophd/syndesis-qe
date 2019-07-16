@@ -14,7 +14,7 @@
 
   <properties>
     <syndesis.integration.runtime>spring-boot</syndesis.integration.runtime>
-    <syndesis.camel.k.customizers>servlet,servletregistration,health,logging,snydesis</syndesis.camel.k.customizers>
+    <syndesis.camel.k.customizers>health,logging,syndesis</syndesis.camel.k.customizers>
     <syndesis.logging.enabled>false</syndesis.logging.enabled>
     <syndesis.server.port>8080</syndesis.server.port>
     <syndesis.management.port>8081</syndesis.management.port>
@@ -35,6 +35,16 @@
       <dependency>
         <groupId>io.syndesis.server</groupId>
         <artifactId>server-runtime</artifactId>
+        <version>${syndesis.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.syndesis.server</groupId>
+        <artifactId>server-controller</artifactId>
+        <version>${syndesis.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.syndesis.server</groupId>
+        <artifactId>server-openshift</artifactId>
         <version>${syndesis.version}</version>
       </dependency>
       <dependency>
@@ -106,6 +116,7 @@
   </dependencyManagement>
 
   <dependencies>
+    <!-- Syndesis -->
     <dependency>
       <groupId>io.syndesis.common</groupId>
       <artifactId>common-model</artifactId>
@@ -119,6 +130,16 @@
       <artifactId>integration-project-generator</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.syndesis.server</groupId>
+      <artifactId>server-controller</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.syndesis.server</groupId>
+      <artifactId>server-openshift</artifactId>
+    </dependency>
+
+    <!-- Citrus -->
     <dependency>
       <groupId>com.consol.citrus</groupId>
       <artifactId>citrus-core</artifactId>

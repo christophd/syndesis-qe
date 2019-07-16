@@ -49,6 +49,8 @@
   <logger name="com.consol.citrus" level="INFO"/>
   <logger name="org.springframework" level="INFO"/>
   <logger name="org.eclipse.jetty" level="WARN"/>
+  <logger name="org.testcontainers" level="INFO"/>
+  <logger name="org.hibernate.validator" level="WARN"/>
 
   <logger name="INTEGRATION_RUNTIME_CONTAINER" level="INFO">
     <!--appender-ref ref="STDOUT"/-->

@@ -3,6 +3,7 @@ package io.syndesis.qe.itest.containers.s2i;
 import java.nio.file.Path;
 import java.time.Duration;
 
+import io.syndesis.qe.itest.SyndesisTestEnvironment;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
@@ -29,6 +30,6 @@ public class SyndesisS2iAssemblyContainer extends GenericContainer<SyndesisS2iAs
 
         withFileSystemBind(projectDir.toAbsolutePath().toString(), "/tmp/src", BindMode.READ_WRITE);
         waitingFor(new LogMessageWaitStrategy().withRegEx(".*\\.\\.\\. done.*\\s")
-                                               .withStartupTimeout(Duration.ofSeconds(120)));
+                                               .withStartupTimeout(Duration.ofSeconds(SyndesisTestEnvironment.getContainerStartupTimeout())));
     }
 }
